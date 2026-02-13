@@ -549,7 +549,7 @@ function renderLifestyle(doc: jsPDF, y: number, data: Record<string, any>, pageW
 
 // ─── Main Export ───
 
-export function generateMedicalHistoryPdf(
+export async function generateMedicalHistoryPdf(
   history: MedicalHistoryForPdf,
   patientName?: string
 ) {
@@ -558,23 +558,55 @@ export function generateMedicalHistoryPdf(
   const margin = 15;
   const contentW = pageW - margin * 2;
 
+  // Load logo
+  const logoUrl = "/logo.png";
+  let logoData: string | null = null;
+  try {
+    const response = await fetch(logoUrl);
+    const blob = await response.blob();
+    logoData = await new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.readAsDataURL(blob);
+    });
+  } catch (error) {
+    console.warn("Failed to load logo", error);
+  }
+
   // ─── Cover Header ───
+  // Modern Header Background
+  doc.setFillColor(248, 250, 252); // slate-50
+  doc.rect(0, 0, pageW, 55, "F");
+
+  // Top Accent
   doc.setFillColor(...COLORS.primary);
-  doc.rect(0, 0, pageW, 42, "F");
+  doc.rect(0, 0, pageW, 3, "F");
 
-  // Accent stripe
-  doc.setFillColor(29, 78, 216);
-  doc.rect(0, 42, pageW, 2.5, "F");
+  // Logo
+  if (logoData) {
+    doc.addImage(logoData, "PNG", margin, 15, 12, 12);
+  }
 
+  // App Branding
+  doc.setFontSize(16);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(...COLORS.primary);
+  doc.text("My Health Compass", logoData ? margin + 16 : margin, 20);
+
+  doc.setFontSize(9);
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(...COLORS.muted);
+  doc.text("Comprehensive Medical History Record", logoData ? margin + 16 : margin, 25);
+
+  // Divider
+  doc.setDrawColor(...COLORS.border);
+  doc.line(margin, 55, pageW - margin, 55);
+
+  // Patient Info (Right Aligned)
   doc.setFontSize(22);
   doc.setFont("helvetica", "bold");
-  doc.setTextColor(...COLORS.white);
-  doc.text("Complete Medical History", margin, 18);
-
-  doc.setFontSize(11);
-  doc.setFont("helvetica", "normal");
-  doc.setTextColor(191, 219, 254);
-  doc.text(patientName || "Patient Health Record", margin, 27);
+  doc.setTextColor(...COLORS.dark);
+  doc.text(patientName || "Patient Record", pageW - margin, 22, { align: "right" });
 
   // Stats on right
   const filledCount = STEPS.filter(
@@ -582,23 +614,28 @@ export function generateMedicalHistoryPdf(
   ).length;
   const completion = Math.round((filledCount / STEPS.length) * 100);
 
+  doc.setFontSize(10);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(...COLORS.success);
+  doc.text(`${completion}% Completed`, pageW - margin, 32, { align: "right" });
+
   doc.setFontSize(8);
-  doc.setTextColor(...COLORS.white);
-  doc.text(`Completion: ${completion}%`, pageW - margin, 16, { align: "right" });
-  doc.text(`${filledCount} of ${STEPS.length} sections filled`, pageW - margin, 22, { align: "right" });
-  doc.text(`Generated: ${new Date().toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}`, pageW - margin, 28, { align: "right" });
-  doc.text(`Status: ${history.is_complete ? "✅ Complete" : "⏳ In Progress"}`, pageW - margin, 34, { align: "right" });
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(...COLORS.muted);
+  doc.text(`Generated: ${new Date().toLocaleDateString("en-IN", { day: "2-digit", month: "long", year: "numeric" })}`, pageW - margin, 38, { align: "right" });
+  doc.text(`Status: ${history.is_complete ? "Finalized" : "Draft / In Progress"}`, pageW - margin, 43, { align: "right" });
+
+  // ─── Start Content ───
+  let y = 65;
 
   // ─── Progress bar ───
-  let y = 52;
-  doc.setFillColor(...COLORS.border);
-  doc.roundedRect(margin, y, contentW, 4, 2, 2, "F");
+  doc.setDrawColor(...COLORS.border);
+  doc.setFillColor(241, 245, 249); // slate-100
+  doc.roundedRect(margin, y, contentW, 6, 3, 3, "FD");
+
   doc.setFillColor(...COLORS.primary);
-  doc.roundedRect(margin, y, Math.max(contentW * (completion / 100), 4), 4, 2, 2, "F");
-  doc.setFontSize(7);
-  doc.setTextColor(...COLORS.muted);
-  doc.text(`${completion}% Complete`, margin + contentW / 2, y + 10, { align: "center" });
-  y += 16;
+  doc.roundedRect(margin, y, Math.max(contentW * (completion / 100), 6), 6, 3, 3, "F");
+  y += 18;
 
   // ─── Table of Contents ───
   doc.setFontSize(10);

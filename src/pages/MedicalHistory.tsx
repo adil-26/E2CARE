@@ -150,7 +150,7 @@ export default function MedicalHistory() {
             variant="outline"
             size="sm"
             className="gap-1.5 text-xs"
-            onClick={() => generateMedicalHistoryPdf(history as any, patientName)}
+            onClick={async () => await generateMedicalHistoryPdf(history as any, patientName)}
             disabled={completionPercent === 0}
           >
             <Download className="h-3.5 w-3.5" /> Download PDF

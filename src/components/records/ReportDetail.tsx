@@ -61,7 +61,7 @@ export default function ReportDetail({ report, onBack }: ReportDetailProps) {
             variant="outline"
             size="sm"
             className="gap-1.5 text-xs"
-            onClick={() => generateReportPdf(report)}
+            onClick={async () => await generateReportPdf(report)}
           >
             <Download className="h-3.5 w-3.5" /> Download PDF
           </Button>

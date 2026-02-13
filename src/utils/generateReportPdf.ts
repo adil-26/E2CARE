@@ -37,7 +37,7 @@ function addFooter(doc: jsPDF, pageNum: number, totalPages: number) {
   doc.text(`Page ${pageNum} of ${totalPages}`, pageW - 15, pageH - 10, { align: "right" });
 }
 
-export function generateReportPdf(report: MedicalReport) {
+export async function generateReportPdf(report: MedicalReport) {
   const doc = new jsPDF("p", "mm", "a4");
   const pageW = doc.internal.pageSize.getWidth();
   const margin = 15;
@@ -49,113 +49,186 @@ export function generateReportPdf(report: MedicalReport) {
   const medications = data.medications || [];
   const findings = data.findings || [];
 
-  // ─── Header Banner ───
+  // Load logo
+  const logoUrl = "/logo.png";
+  let logoData: string | null = null;
+  try {
+    const response = await fetch(logoUrl);
+    const blob = await response.blob();
+    logoData = await new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.readAsDataURL(blob);
+    });
+  } catch (error) {
+    console.warn("Failed to load logo", error);
+  }
+
+  // ─── Modern Header ───
+  // Background Pattern
+  doc.setFillColor(248, 250, 252); // slate-50
+  doc.rect(0, 0, pageW, 45, "F");
+
+  // Accent Line
   doc.setFillColor(...COLORS.primary);
-  doc.rect(0, 0, pageW, 38, "F");
+  doc.rect(0, 0, pageW, 2, "F");
 
-  // Decorative accent stripe
-  doc.setFillColor(29, 78, 216); // blue-700
-  doc.rect(0, 38, pageW, 2, "F");
+  // Logo & Branding
+  if (logoData) {
+    doc.addImage(logoData, "PNG", margin, 12, 10, 10);
+  }
 
-  doc.setFontSize(20);
+  // App Name
+  doc.setFontSize(14);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(...COLORS.primary);
+  doc.text("My Health Compass", logoData ? margin + 14 : margin, 19);
+
+  doc.setFontSize(8);
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(...COLORS.muted);
+  doc.text("Your Personal Health Record", logoData ? margin + 14 : margin, 23);
+
+  // Report Title & Meta (Right Aligned)
+  doc.setFontSize(18);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(...COLORS.dark);
+  doc.text("Medical Report", pageW - margin, 18, { align: "right" });
+
+  doc.setFontSize(9);
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(...COLORS.muted);
+  const dateStr = report.report_date
+    ? new Date(report.report_date).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })
+    : "Date Not Specified";
+  doc.text(dateStr, pageW - margin, 24, { align: "right" });
+
+  // Divider
+  doc.setDrawColor(...COLORS.border);
+  doc.line(margin, 45, pageW - margin, 45);
+
+  y = 55;
+
+  // ─── Status Badge & Report Info ───
+  // Report Title
+  doc.setFontSize(12);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(...COLORS.dark);
+  doc.text(report.title, margin, y);
+
+  // Status Badge
+  const statusColor = report.status === "completed" ? COLORS.success : COLORS.warning;
+  doc.setFillColor(...statusColor);
+  doc.roundedRect(pageW - margin - 22, y - 4, 22, 6, 1, 1, "F");
+  doc.setFontSize(7);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(...COLORS.white);
-  doc.text("Medical Report", margin, 18);
+  doc.text(report.status.toUpperCase(), pageW - margin - 11, y, { align: "center" });
 
-  doc.setFontSize(10);
-  doc.setFont("helvetica", "normal");
-  doc.setTextColor(191, 219, 254); // blue-200
-  doc.text(report.title, margin, 26);
+  y += 8;
 
-  // Right side meta
+  // Metadata Grid
   doc.setFontSize(8);
-  doc.setTextColor(...COLORS.white);
-  if (report.report_date) {
-    doc.text(`Date: ${new Date(report.report_date).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}`, pageW - margin, 14, { align: "right" });
-  }
-  const reportTypeLabel = report.report_type.charAt(0).toUpperCase() + report.report_type.slice(1);
-  doc.text(`Type: ${reportTypeLabel}`, pageW - margin, 20, { align: "right" });
+  doc.setTextColor(...COLORS.muted);
+  doc.text(`Type: ${report.report_type.charAt(0).toUpperCase() + report.report_type.slice(1)}`, margin, y);
   if (data.lab_name) {
-    doc.text(`Lab: ${data.lab_name}`, pageW - margin, 26, { align: "right" });
+    doc.text(`Lab: ${data.lab_name}`, margin + 60, y);
   }
-  doc.text(`ID: ${report.id.slice(0, 8).toUpperCase()}`, pageW - margin, 32, { align: "right" });
+  doc.text(`Ref ID: #${report.id.slice(0, 8).toUpperCase()}`, pageW - margin, y, { align: "right" });
 
-  y = 48;
+  y += 12;
 
   // ─── AI Summary Section ───
   if (report.ai_summary) {
-    doc.setFillColor(...COLORS.primaryLight);
-    doc.roundedRect(margin, y, contentW, 8, 1, 1, "F");
+    // Container
+    doc.setDrawColor(219, 234, 254); // blue-100
+    doc.setFillColor(239, 246, 255); // blue-50
+    doc.roundedRect(margin, y, contentW, 8, 2, 2, "FD");
+
+    // Icon & Title
     doc.setFontSize(10);
     doc.setFont("helvetica", "bold");
     doc.setTextColor(...COLORS.primary);
-    doc.text("🤖  AI Summary", margin + 4, y + 5.5);
+    doc.text("AI Analysis Summary", margin + 4, y + 5.5);
+
     y += 12;
 
-    doc.setFontSize(8.5);
+    doc.setFontSize(9);
     doc.setFont("helvetica", "normal");
     doc.setTextColor(...COLORS.dark);
     const summaryLines = doc.splitTextToSize(report.ai_summary, contentW - 8);
-    doc.text(summaryLines, margin + 4, y + 1);
-    y += summaryLines.length * 4 + 6;
+
+    // Left border for content emphasis
+    doc.setDrawColor(...COLORS.primaryLight);
+    doc.setLineWidth(1);
+    doc.line(margin + 2, y, margin + 2, y + (summaryLines.length * 4.5));
+
+    doc.text(summaryLines, margin + 6, y + 1);
+    y += summaryLines.length * 4.5 + 10;
   }
 
-  // ─── Quick Stats Bar ───
+  // ─── Quick Stats Bar (Modern) ───
   if (testResults.length > 0) {
     const abnormalCount = testResults.filter(
       (t: any) => t.status === "high" || t.status === "low" || t.status === "critical"
     ).length;
     const normalCount = testResults.length - abnormalCount;
 
-    const statW = contentW / 3;
+    const statW = (contentW - 6) / 3; // Gap of 3
     const statsData = [
-      { label: "Total Tests", value: String(testResults.length), color: COLORS.primary, bgColor: COLORS.primaryLight },
-      { label: "Normal", value: String(normalCount), color: COLORS.success, bgColor: COLORS.successBg },
-      { label: "Abnormal", value: String(abnormalCount), color: abnormalCount > 0 ? COLORS.danger : COLORS.success, bgColor: abnormalCount > 0 ? COLORS.dangerBg : COLORS.successBg },
+      { label: "Total Tests", value: String(testResults.length), color: COLORS.primary, bgColor: COLORS.primaryLight, icon: "📋" },
+      { label: "Normal Results", value: String(normalCount), color: COLORS.success, bgColor: COLORS.successBg, icon: "✅" },
+      { label: "Needs Attention", value: String(abnormalCount), color: abnormalCount > 0 ? COLORS.danger : COLORS.success, bgColor: abnormalCount > 0 ? COLORS.dangerBg : COLORS.successBg, icon: abnormalCount > 0 ? "⚠️" : "✨" },
     ];
 
     statsData.forEach((stat, i) => {
-      const x = margin + i * statW;
+      const x = margin + i * (statW + 3);
       doc.setFillColor(...stat.bgColor);
-      doc.roundedRect(x + 1, y, statW - 2, 16, 2, 2, "F");
+      // Remove border for cleaner look
+      doc.setDrawColor(...stat.bgColor);
+      doc.roundedRect(x, y, statW, 18, 2, 2, "F");
 
-      doc.setFontSize(16);
+      doc.setFontSize(14);
       doc.setFont("helvetica", "bold");
       doc.setTextColor(...stat.color);
-      doc.text(stat.value, x + statW / 2, y + 9, { align: "center" });
+      doc.text(stat.value, x + statW / 2, y + 8, { align: "center" });
 
-      doc.setFontSize(6.5);
-      doc.setFont("helvetica", "normal");
-      doc.setTextColor(...COLORS.muted);
-      doc.text(stat.label, x + statW / 2, y + 14, { align: "center" });
+      doc.setFontSize(7);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(...COLORS.muted); // Muted label
+      doc.text(stat.label.toUpperCase(), x + statW / 2, y + 14, { align: "center" });
     });
-    y += 22;
+    y += 26;
   }
 
   // ─── Test Results Tables by Category ───
   if (testResults.length > 0) {
     const grouped = testResults.reduce((acc: Record<string, any[]>, test: any) => {
-      const cat = test.category || "General";
+      const cat = test.category || "General Tests";
       if (!acc[cat]) acc[cat] = [];
       acc[cat].push(test);
       return acc;
     }, {});
 
     Object.entries(grouped).forEach(([category, tests]) => {
-      // Check if we need a new page
+      // Check page break
       if (y > doc.internal.pageSize.getHeight() - 40) {
         doc.addPage();
         y = 20;
       }
 
-      // Category header
-      doc.setFillColor(...COLORS.dark);
-      doc.roundedRect(margin, y, contentW, 7, 1, 1, "F");
-      doc.setFontSize(9);
+      // Modern Category Header
+      doc.setFontSize(10);
       doc.setFont("helvetica", "bold");
-      doc.setTextColor(...COLORS.white);
-      doc.text(`  ${category}`, margin + 2, y + 5);
-      y += 9;
+      doc.setTextColor(...COLORS.dark);
+      doc.text(category, margin, y + 5);
+
+      // Underline
+      doc.setDrawColor(...COLORS.border);
+      doc.setLineWidth(0.2);
+      doc.line(margin, y + 7, pageW - margin, y + 7);
+
+      y += 10;
 
       const tableBody = (tests as any[]).map((test: any) => {
         const statusLabel = (test.status || "unknown").toUpperCase();
@@ -170,27 +243,30 @@ export function generateReportPdf(report: MedicalReport) {
       autoTable(doc, {
         startY: y,
         margin: { left: margin, right: margin },
-        head: [["Test Name", "Result", "Reference Range", "Status"]],
+        head: [["TEST NAME", "RESULT", "REFERENCE RANGE", "STATUS"]],
         body: tableBody,
-        theme: "plain",
+        theme: "grid", // Cleaner grid
         styles: {
           fontSize: 8,
-          cellPadding: { top: 2.5, bottom: 2.5, left: 3, right: 3 },
+          cellPadding: { top: 3, bottom: 3, left: 4, right: 4 },
           textColor: COLORS.dark,
           lineColor: COLORS.border,
-          lineWidth: 0.2,
+          lineWidth: 0.1,
+          font: "helvetica",
         },
         headStyles: {
           fillColor: COLORS.bg,
           textColor: COLORS.muted,
           fontStyle: "bold",
           fontSize: 7,
+          halign: "left",
+          lineWidth: 0, // No border for header
         },
         columnStyles: {
           0: { cellWidth: "auto", fontStyle: "bold" },
-          1: { halign: "center", cellWidth: 35 },
+          1: { halign: "right", cellWidth: 35, fontStyle: "bold" },
           2: { halign: "center", cellWidth: 35, fontSize: 7, textColor: COLORS.muted },
-          3: { halign: "center", cellWidth: 22, fontSize: 7 },
+          3: { halign: "center", cellWidth: 25, fontSize: 7, fontStyle: "bold" },
         },
         didParseCell: (hookData) => {
           if (hookData.section === "body" && hookData.column.index === 3) {
@@ -198,26 +274,24 @@ export function generateReportPdf(report: MedicalReport) {
             const colors = STATUS_COLORS[status];
             if (colors) {
               hookData.cell.styles.textColor = colors.text;
-              hookData.cell.styles.fillColor = colors.bg;
-              hookData.cell.styles.fontStyle = "bold";
+              // Remove background for cleaner look, just colored text
+              hookData.cell.styles.fillColor = [255, 255, 255];
             }
           }
-          // Highlight abnormal result values
+          // Highlight abnormal result values directly
           if (hookData.section === "body" && hookData.column.index === 1) {
             const row = hookData.row.index;
             const testItem = (tests as any[])[row];
             if (testItem && (testItem.status === "high" || testItem.status === "critical")) {
               hookData.cell.styles.textColor = COLORS.danger;
-              hookData.cell.styles.fontStyle = "bold";
             } else if (testItem && testItem.status === "low") {
               hookData.cell.styles.textColor = COLORS.primary;
-              hookData.cell.styles.fontStyle = "bold";
             }
           }
         },
       });
 
-      y = (doc as any).lastAutoTable.finalY + 8;
+      y = (doc as any).lastAutoTable.finalY + 12;
     });
   }
 
@@ -228,13 +302,12 @@ export function generateReportPdf(report: MedicalReport) {
       y = 20;
     }
 
-    doc.setFillColor(...COLORS.warning);
-    doc.roundedRect(margin, y, contentW, 7, 1, 1, "F");
-    doc.setFontSize(9);
+    doc.setFontSize(10);
     doc.setFont("helvetica", "bold");
-    doc.setTextColor(...COLORS.white);
-    doc.text(`  💊 Medications (${medications.length})`, margin + 2, y + 5);
-    y += 9;
+    doc.setTextColor(...COLORS.dark);
+    doc.text("Medications", margin, y + 5);
+    doc.line(margin, y + 7, pageW - margin, y + 7);
+    y += 10;
 
     const medBody = medications.map((med: any) => [
       med.name || "-",
@@ -247,19 +320,19 @@ export function generateReportPdf(report: MedicalReport) {
     autoTable(doc, {
       startY: y,
       margin: { left: margin, right: margin },
-      head: [["Medicine", "Dosage", "Frequency", "Duration", "Instructions"]],
+      head: [["MEDICINE", "DOSAGE", "FREQUENCY", "DURATION", "INSTRUCTIONS"]],
       body: medBody,
-      theme: "plain",
+      theme: "grid",
       styles: {
         fontSize: 8,
-        cellPadding: { top: 2.5, bottom: 2.5, left: 3, right: 3 },
+        cellPadding: { top: 3, bottom: 3, left: 4, right: 4 },
         textColor: COLORS.dark,
         lineColor: COLORS.border,
-        lineWidth: 0.2,
+        lineWidth: 0.1,
       },
       headStyles: {
         fillColor: COLORS.warningBg,
-        textColor: [113, 63, 18], // yellow-900
+        textColor: [161, 98, 7], // yellow-700
         fontStyle: "bold",
         fontSize: 7,
       },
@@ -268,7 +341,7 @@ export function generateReportPdf(report: MedicalReport) {
       },
     });
 
-    y = (doc as any).lastAutoTable.finalY + 8;
+    y = (doc as any).lastAutoTable.finalY + 12;
   }
 
   // ─── Key Findings Section ───
@@ -278,30 +351,31 @@ export function generateReportPdf(report: MedicalReport) {
       y = 20;
     }
 
-    doc.setFillColor(...COLORS.success);
+    // Card style for findings
+    doc.setFillColor(...COLORS.successBg);
     doc.roundedRect(margin, y, contentW, 7, 1, 1, "F");
-    doc.setFontSize(9);
-    doc.setFont("helvetica", "bold");
-    doc.setTextColor(...COLORS.white);
-    doc.text("  🔍 Key Findings", margin + 2, y + 5);
-    y += 12;
 
-    doc.setFontSize(8.5);
-    doc.setFont("helvetica", "normal");
-    doc.setTextColor(...COLORS.dark);
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(...COLORS.success);
+    doc.text("Key Findings", margin + 3, y + 5);
+    y += 10;
 
     findings.forEach((finding: string) => {
       if (y > doc.internal.pageSize.getHeight() - 25) {
         doc.addPage();
         y = 20;
       }
-      // Bullet
-      doc.setFillColor(...COLORS.primary);
-      doc.circle(margin + 3, y - 0.5, 1, "F");
+      doc.setFillColor(...COLORS.success);
+      doc.circle(margin + 3, y - 1, 1.5, "F");
+
+      doc.setFontSize(9);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(...COLORS.dark);
 
       const lines = doc.splitTextToSize(finding, contentW - 12);
-      doc.text(lines, margin + 7, y);
-      y += lines.length * 4 + 3;
+      doc.text(lines, margin + 8, y);
+      y += lines.length * 4.5 + 3;
     });
   }
 
@@ -312,7 +386,8 @@ export function generateReportPdf(report: MedicalReport) {
     addFooter(doc, i, totalPages);
   }
 
-  // ─── Save ───
-  const safeName = report.title.replace(/[^a-zA-Z0-9]/g, "_").slice(0, 40);
-  doc.save(`${safeName}_Report.pdf`);
+  // ─── Save with cleaner name ───
+  const safeName = report.title.replace(/[^a-zA-Z0-9]/g, "_").slice(0, 30);
+  const dateSuffix = new Date().toISOString().split("T")[0];
+  doc.save(`${safeName}_${dateSuffix}.pdf`);
 }
