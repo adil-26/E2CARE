@@ -3,6 +3,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
+import EyeDiagram from "./EyeDiagram";
 
 interface Props {
   data: Record<string, any>;
@@ -28,6 +29,18 @@ export default function BodySystemEyes({ data, onChange }: Props) {
 
   return (
     <div className="space-y-4 sm:space-y-5">
+      <div>
+        <EyeDiagram
+          selectedAreas={data.eye_problem_areas || []}
+          onToggle={(area) => {
+            const list: string[] = data.eye_problem_areas || [];
+            const updated = list.includes(area) ? list.filter((a) => a !== area) : [...list, area];
+            update("eye_problem_areas", updated);
+          }}
+          conditions={conditions}
+        />
+      </div>
+
       <div>
         <Label className="mb-3 block text-sm font-semibold">👁️ Eye Conditions</Label>
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">

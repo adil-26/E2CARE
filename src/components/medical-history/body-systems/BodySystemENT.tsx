@@ -5,6 +5,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent } from "@/components/ui/card";
 import TeethDiagram from "./TeethDiagram";
+import EarDiagram from "./EarDiagram";
+import NoseThroatDiagram from "./NoseThroatDiagram";
 
 interface Props {
   data: Record<string, any>;
@@ -39,6 +41,16 @@ export default function BodySystemENT({ data, onChange }: Props) {
                 {cond}
               </label>
             ))}
+          </div>
+          <div className="mt-4">
+            <EarDiagram
+              selectedAreas={data.ear_problem_areas || []}
+              onToggle={(area) => {
+                const list: string[] = data.ear_problem_areas || [];
+                const updated = list.includes(area) ? list.filter((a) => a !== area) : [...list, area];
+                update("ear_problem_areas", updated);
+              }}
+            />
           </div>
           <div className="mt-3 grid gap-3 grid-cols-1 sm:grid-cols-2">
             <div className="space-y-1">
@@ -75,6 +87,16 @@ export default function BodySystemENT({ data, onChange }: Props) {
                 {cond}
               </label>
             ))}
+          </div>
+          <div className="mt-4">
+            <NoseThroatDiagram
+              selectedAreas={data.nose_throat_areas || []}
+              onToggle={(area) => {
+                const list: string[] = data.nose_throat_areas || [];
+                const updated = list.includes(area) ? list.filter((a) => a !== area) : [...list, area];
+                update("nose_throat_areas", updated);
+              }}
+            />
           </div>
         </CardContent>
       </Card>

@@ -3,7 +3,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
+
 import { cn } from "@/lib/utils";
+import SkeletonDiagram from "./SkeletonDiagram";
+import Skeleton3D from "./Skeleton3D";
+import { Switch } from "@/components/ui/switch";
+import { useState } from "react";
+
 
 interface Props {
   data: Record<string, any>;
@@ -26,8 +32,11 @@ const bodyAreas = [
   "Elbow (L)", "Elbow (R)", "Fingers", "Toes",
 ];
 
+
 export default function BodySystemMusculo({ data, onChange }: Props) {
+  const [view3D, setView3D] = useState(false);
   const update = (key: string, value: any) => onChange({ ...data, [key]: value });
+
 
   const toggleCondition = (cond: string) => {
     const list: string[] = data.conditions || [];
@@ -55,29 +64,47 @@ export default function BodySystemMusculo({ data, onChange }: Props) {
         </div>
       </div>
 
+
       <div>
-        <Label className="mb-3 block text-sm font-semibold">Pain Areas (tap all that apply)</Label>
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-          {bodyAreas.map((area) => {
-            const selected = (data.pain_areas || []).includes(area);
-            return (
+        <div className="flex items-center justify-between mb-3">
+          <Label className="block text-sm font-semibold">Pain Areas</Label>
+          <div className="flex items-center gap-2">
+            <span className={cn("text-xs cursor-pointer", !view3D && "font-bold text-primary")} onClick={() => setView3D(false)}>2D Diagram</span>
+            <Switch checked={view3D} onCheckedChange={setView3D} />
+            <span className={cn("text-xs cursor-pointer", view3D && "font-bold text-primary")} onClick={() => setView3D(true)}>3D Model</span>
+          </div>
+        </div>
+
+        {view3D ? (
+          <Skeleton3D
+            highlightedBones={data.pain_areas || []}
+            onToggle={togglePainArea}
+          />
+        ) : (
+          <SkeletonDiagram
+            painAreas={data.pain_areas || []}
+            onToggle={togglePainArea}
+          />
+        )}
+
+        {/* Fallback / Text based selection for accessibility or complex areas not in diagram */}
+        <div className="mt-4">
+          <Label className="text-xs text-muted-foreground mb-2 block">Quick Select / Additional Areas</Label>
+          <div className="flex flex-wrap gap-2">
+            {bodyAreas.filter(area => !(data.pain_areas || []).includes(area)).map((area) => (
               <button
                 key={area}
                 type="button"
                 onClick={() => togglePainArea(area)}
-                className={cn(
-                  "rounded-lg border px-3 py-2.5 min-h-[44px] text-xs sm:text-sm font-medium transition-all flex items-center gap-2",
-                  selected
-                    ? "border-destructive/50 bg-destructive/10 text-destructive"
-                    : "border-border text-muted-foreground hover:bg-accent active:scale-95"
-                )}
+                className="px-2 py-1 rounded border border-dashed border-border text-[10px] text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
               >
-                {selected ? "🔴" : "⚪"} {area}
+                + {area}
               </button>
-            );
-          })}
+            ))}
+          </div>
         </div>
       </div>
+
 
       <div className="grid gap-3 grid-cols-1 sm:grid-cols-2">
         <div className="space-y-1">

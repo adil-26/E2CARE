@@ -4,6 +4,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 
+
+import OrgansDiagram from "./OrgansDiagram";
 interface Props {
   data: Record<string, any>;
   onChange: (data: Record<string, any>) => void;
@@ -32,15 +34,23 @@ export default function BodySystemCardio({ data, onChange }: Props) {
 
   return (
     <div className="space-y-4 sm:space-y-5">
-      <div>
-        <Label className="mb-3 block text-sm font-semibold">❤️ Heart Conditions</Label>
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-          {heartConditions.map((cond) => (
-            <label key={cond} className="flex items-center gap-2.5 rounded-lg border border-border p-2.5 min-h-[44px] text-xs sm:text-sm cursor-pointer hover:bg-accent active:bg-accent/80 transition-colors">
-              <Checkbox checked={(data.heart_conditions || []).includes(cond)} onCheckedChange={() => toggleItem(data.heart_conditions || [], cond, "heart_conditions")} />
-              {cond}
-            </label>
-          ))}
+      <div className="grid grid-cols-1 md:grid-cols-[1fr_200px] gap-6">
+        <div>
+          <Label className="mb-3 block text-sm font-semibold">❤️ Heart Conditions</Label>
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+            {heartConditions.map((cond) => (
+              <label key={cond} className="flex items-center gap-2.5 rounded-lg border border-border p-2.5 min-h-[44px] text-xs sm:text-sm cursor-pointer hover:bg-accent active:bg-accent/80 transition-colors">
+                <Checkbox checked={(data.heart_conditions || []).includes(cond)} onCheckedChange={() => toggleItem(data.heart_conditions || [], cond, "heart_conditions")} />
+                {cond}
+              </label>
+            ))}
+          </div>
+        </div>
+
+        {/* Anatomical Model */}
+        <div className="hidden md:block">
+          <Label className="mb-2 block text-xs text-center text-muted-foreground">Reference</Label>
+          <OrgansDiagram system="cardio" conditions={data.heart_conditions || []} />
         </div>
       </div>
 

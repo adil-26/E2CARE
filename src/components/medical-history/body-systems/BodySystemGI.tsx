@@ -4,6 +4,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import StoolUrineAnalysis from "./StoolUrineAnalysis";
+import OrgansDiagram from "./OrgansDiagram";
 
 interface Props {
   data: Record<string, any>;
@@ -29,15 +30,23 @@ export default function BodySystemGI({ data, onChange }: Props) {
 
   return (
     <div className="space-y-4 sm:space-y-5">
-      <div>
-        <Label className="mb-3 block text-sm font-semibold">🫁 Digestive Conditions</Label>
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-          {giConditions.map((cond) => (
-            <label key={cond} className="flex items-center gap-2.5 rounded-lg border border-border p-2.5 min-h-[44px] text-xs sm:text-sm cursor-pointer hover:bg-accent active:bg-accent/80 transition-colors">
-              <Checkbox checked={(data.conditions || []).includes(cond)} onCheckedChange={() => toggleCondition(cond)} />
-              {cond}
-            </label>
-          ))}
+      <div className="grid grid-cols-1 md:grid-cols-[1fr_200px] gap-6">
+        <div>
+          <Label className="mb-3 block text-sm font-semibold">🫁 Digestive Conditions</Label>
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+            {giConditions.map((cond) => (
+              <label key={cond} className="flex items-center gap-2.5 rounded-lg border border-border p-2.5 min-h-[44px] text-xs sm:text-sm cursor-pointer hover:bg-accent active:bg-accent/80 transition-colors">
+                <Checkbox checked={(data.conditions || []).includes(cond)} onCheckedChange={() => toggleCondition(cond)} />
+                {cond}
+              </label>
+            ))}
+          </div>
+        </div>
+
+        {/* Anatomical Model */}
+        <div className="hidden md:block">
+          <Label className="mb-2 block text-xs text-center text-muted-foreground">Reference</Label>
+          <OrgansDiagram system="gi" conditions={data.conditions || []} />
         </div>
       </div>
 
