@@ -92,16 +92,19 @@ function checkPageBreak(doc: jsPDF, y: number, needed: number = 30): number {
 }
 
 function addSectionHeader(doc: jsPDF, y: number, step: typeof STEPS[number], pageW: number): number {
-  const margin = 15;
-  const contentW = pageW - margin * 2;
+  // NOTE: This helper is legacy/backup. Main loop now handles headers directly.
+  // We keep it just in case individual renderers call it, but we style it cleanly.
   y = checkPageBreak(doc, y, 20);
 
-  doc.setFillColor(...step.color);
-  doc.roundedRect(margin, y, contentW, 8, 1.5, 1.5, "F");
-  doc.setFontSize(10);
+  doc.setFontSize(11);
   doc.setFont("helvetica", "bold");
-  doc.setTextColor(...COLORS.white);
-  doc.text(`  ${step.icon}  ${step.label}`, margin + 3, y + 5.8);
+  doc.setTextColor(...COLORS.primary);
+  doc.text(`  ${step.icon}  ${step.label}`, margin, y + 5);
+
+  doc.setDrawColor(...COLORS.primaryLight);
+  doc.setLineWidth(0.5);
+  doc.line(margin, y + 7, pageW - margin, y + 7);
+
   return y + 12;
 }
 
