@@ -2,6 +2,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
+import SkinBodyDiagram from "./SkinBodyDiagram";
 
 interface Props {
   data: Record<string, any>;
@@ -24,17 +25,37 @@ export default function BodySystemSkin({ data, onChange }: Props) {
     update("conditions", updated);
   };
 
+  const selectedRegions = data.affected_areas || [];
+  const toggleRegion = (region: string) => {
+    const updated = selectedRegions.includes(region)
+      ? selectedRegions.filter((r: string) => r !== region)
+      : [...selectedRegions, region];
+    update("affected_areas", updated);
+  };
+
   return (
-    <div className="space-y-4 sm:space-y-5">
-      <div>
-        <Label className="mb-3 block text-sm font-semibold">🧴 Skin & Hair Conditions</Label>
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-          {skinConditions.map((cond) => (
-            <label key={cond} className="flex items-center gap-2.5 rounded-lg border border-border p-2.5 min-h-[44px] text-xs sm:text-sm cursor-pointer hover:bg-accent active:bg-accent/80 transition-colors">
-              <Checkbox checked={(data.conditions || []).includes(cond)} onCheckedChange={() => toggleCondition(cond)} />
-              {cond}
-            </label>
-          ))}
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2 space-y-5">
+          <div>
+            <Label className="mb-3 block text-sm font-semibold">🧴 Skin & Hair Conditions</Label>
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+              {skinConditions.map((cond) => (
+                <label key={cond} className="flex items-center gap-2.5 rounded-lg border border-border p-2.5 min-h-[44px] text-xs sm:text-sm cursor-pointer hover:bg-accent active:bg-accent/80 transition-colors">
+                  <Checkbox checked={(data.conditions || []).includes(cond)} onCheckedChange={() => toggleCondition(cond)} />
+                  {cond}
+                </label>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Skin Diagram - Hidden on small mobile, visible on desktop */}
+        <div className="hidden sm:block lg:col-span-1">
+          <SkinBodyDiagram
+            selectedRegions={selectedRegions}
+            onToggle={toggleRegion}
+          />
         </div>
       </div>
 

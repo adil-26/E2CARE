@@ -226,21 +226,24 @@ export default function TeethDiagram({ teethData, onChange }: TeethDiagramProps)
     <div className="space-y-6">
       <div className="flex flex-col items-center">
         {/* SVG Container */}
-        <div className="relative w-full max-w-[400px] aspect-[4/5] mx-auto bg-card rounded-xl border shadow-sm p-4 overflow-hidden">
-          <Label className="absolute top-4 left-4 text-xs font-semibold text-muted-foreground uppercase flex items-center gap-1">
-            <Info className="w-3 h-3" /> Interactive Chart
-          </Label>
+        <div className="relative w-full max-w-[400px] aspect-[4/5] mx-auto bg-gradient-to-br from-slate-50 via-blue-50/20 to-indigo-50 rounded-2xl border-2 border-slate-200/60 shadow-lg p-4 overflow-hidden">
 
-          <svg viewBox="0 0 400 500" className="w-full h-full select-none">
+          {/* Header Badge */}
+          <div className="absolute top-3 left-3 flex items-center gap-2 text-[10px] font-semibold text-slate-600 uppercase tracking-wide bg-white/90 px-3 py-1.5 rounded-lg backdrop-blur-md border border-slate-200 shadow-sm z-10">
+            <Info className="w-3 h-3 text-slate-500" />
+            <span className="bg-gradient-to-r from-slate-700 to-slate-500 bg-clip-text text-transparent">Dental Chart</span>
+          </div>
+
+          <svg viewBox="0 0 400 500" className="w-full h-full select-none drop-shadow-sm">
             {/* Center Cross / Mouth BG (Optional) */}
             {/* <ellipse cx="200" cy="250" rx="100" ry="120" fill="#f1f5f9" opacity="0.5" /> */}
 
             {/* Labels */}
-            <text x="50" y="40" fontSize="12" fill="#94a3b8" fontWeight="bold">RIGHT</text>
-            <text x="310" y="40" fontSize="12" fill="#94a3b8" fontWeight="bold">LEFT</text>
+            <text x="50" y="50" fontSize="10" fill="#94a3b8" fontWeight="bold">RIGHT</text>
+            <text x="310" y="50" fontSize="10" fill="#94a3b8" fontWeight="bold">LEFT</text>
 
-            <text x="200" y="80" textAnchor="middle" fontSize="10" fill="#cbd5e1" letterSpacing="2">UPPER</text>
-            <text x="200" y="420" textAnchor="middle" fontSize="10" fill="#cbd5e1" letterSpacing="2">LOWER</text>
+            <text x="200" y="110" textAnchor="middle" fontSize="10" fill="#cbd5e1" letterSpacing="2" fontWeight="600">UPPER ARCH</text>
+            <text x="200" y="390" textAnchor="middle" fontSize="10" fill="#cbd5e1" letterSpacing="2" fontWeight="600">LOWER ARCH</text>
 
             {/* Upper Teeth (1-16) */}
             {/* 1 (Right Molar) is at ~190 deg (Left on screen) -> Wait, Reference image: 

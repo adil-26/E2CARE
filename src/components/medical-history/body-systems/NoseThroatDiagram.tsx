@@ -154,11 +154,11 @@ const noseThroatParts = [
 export default function NoseThroatDiagram({ selectedAreas, onToggle }: NoseThroatDiagramProps) {
     return (
         <div className="flex flex-col items-center">
-            <div className="relative w-full max-w-[300px] aspect-[3/4] mx-auto bg-gradient-to-br from-orange-50 via-rose-50/30 to-amber-50 rounded-2xl border-2 border-orange-200/80 shadow-lg p-4 overflow-hidden">
+            <div className="relative w-full max-w-[300px] aspect-[3/4] mx-auto bg-gradient-to-br from-orange-50 via-rose-50/30 to-amber-50 rounded-2xl border border-orange-200 shadow-sm p-4 overflow-hidden">
                 {/* Instruction Badge */}
-                <div className="absolute top-3 left-3 flex items-center gap-2 text-[10px] font-semibold text-orange-700 uppercase tracking-wide bg-white/90 px-3 py-1.5 rounded-lg backdrop-blur-md border border-orange-300/50 shadow-sm z-10">
+                <div className="absolute top-3 left-3 flex items-center gap-2 text-[10px] font-semibold text-orange-700 uppercase tracking-wide bg-white/80 px-2.5 py-1 rounded-md border border-orange-200 shadow-sm z-10">
                     <Info className="w-3 h-3 text-orange-600" />
-                    <span className="bg-gradient-to-r from-orange-600 to-rose-500 bg-clip-text text-transparent">Nose & Throat</span>
+                    <span>Nose & Throat</span>
                 </div>
 
                 <svg viewBox="0 0 300 250" className="w-full h-full select-none drop-shadow-md" aria-label="Interactive nose and throat anatomy diagram">

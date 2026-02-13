@@ -3,6 +3,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
+import BrainDiagram from "./BrainDiagram";
 
 interface Props {
   data: Record<string, any>;
@@ -27,17 +28,37 @@ export default function BodySystemNeuro({ data, onChange }: Props) {
     update("conditions", updated);
   };
 
+  const selectedRegions = data.affected_regions || [];
+  const toggleRegion = (region: string) => {
+    const updated = selectedRegions.includes(region)
+      ? selectedRegions.filter((r: string) => r !== region)
+      : [...selectedRegions, region];
+    update("affected_regions", updated);
+  };
+
   return (
-    <div className="space-y-4 sm:space-y-5">
-      <div>
-        <Label className="mb-3 block text-sm font-semibold">🧠 Neurological Conditions</Label>
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-          {neuroConditions.map((cond) => (
-            <label key={cond} className="flex items-center gap-2.5 rounded-lg border border-border p-2.5 min-h-[44px] text-xs sm:text-sm cursor-pointer hover:bg-accent active:bg-accent/80 transition-colors">
-              <Checkbox checked={(data.conditions || []).includes(cond)} onCheckedChange={() => toggleCondition(cond)} />
-              {cond}
-            </label>
-          ))}
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2 space-y-5">
+          <div>
+            <Label className="mb-3 block text-sm font-semibold">🧠 Neurological Conditions</Label>
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              {neuroConditions.map((cond) => (
+                <label key={cond} className="flex items-center gap-2.5 rounded-lg border border-border p-2.5 min-h-[44px] text-xs sm:text-sm cursor-pointer hover:bg-accent active:bg-accent/80 transition-colors">
+                  <Checkbox checked={(data.conditions || []).includes(cond)} onCheckedChange={() => toggleCondition(cond)} />
+                  {cond}
+                </label>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Brain Diagram - Hidden on small mobile, visible on desktop */}
+        <div className="hidden sm:block lg:col-span-1">
+          <BrainDiagram
+            selectedRegions={selectedRegions}
+            onToggle={toggleRegion}
+          />
         </div>
       </div>
 

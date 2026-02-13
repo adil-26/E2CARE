@@ -237,7 +237,6 @@ export function useVideoCall(conversationId: string, remoteName: string) {
     },
     [user, conversationId]
   );
-
   const startCall = useCallback(
     async (callType: CallType) => {
       if (!user) return;
@@ -473,7 +472,7 @@ export function useVideoCall(conversationId: string, remoteName: string) {
 
           case "ice-candidate":
             if (signal.candidate) {
-              CallLogger.iceCandidate('received', conversationId, { type: signal.candidate.type });
+              CallLogger.iceCandidate('received', conversationId, { candidate: signal.candidate.candidate });
               if (peerConnection.current?.remoteDescription) {
                 peerConnection.current.addIceCandidate(new RTCIceCandidate(signal.candidate))
                   .catch((err) => CallLogger.warn('Failed to add ICE candidate', { error: String(err) }, conversationId));
@@ -507,7 +506,7 @@ export function useVideoCall(conversationId: string, remoteName: string) {
     // Subscribe with async handling
     const subscribeAsync = async () => {
       try {
-        const status = await channel.subscribe((status) => {
+        channel.subscribe((status) => {
           CallLogger.info(`Channel subscription: ${status}`, { channel: channelName }, conversationId);
           if (status === "SUBSCRIBED") {
             isChannelReady.current = true;

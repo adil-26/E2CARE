@@ -4,7 +4,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import StoolUrineAnalysis from "./StoolUrineAnalysis";
-import OrgansDiagram from "./OrgansDiagram";
+import DigestiveSystemDiagram from "./DigestiveSystemDiagram";
 
 interface Props {
   data: Record<string, any>;
@@ -45,8 +45,11 @@ export default function BodySystemGI({ data, onChange }: Props) {
 
         {/* Anatomical Model */}
         <div className="hidden md:block">
-          <Label className="mb-2 block text-xs text-center text-muted-foreground">Reference</Label>
-          <OrgansDiagram system="gi" conditions={data.conditions || []} />
+          {/* <Label className="mb-2 block text-xs text-center text-muted-foreground">Reference</Label> */}
+          <DigestiveSystemDiagram
+            conditions={data.conditions || []}
+            organRemoved={data.organ_removed}
+          />
         </div>
       </div>
 

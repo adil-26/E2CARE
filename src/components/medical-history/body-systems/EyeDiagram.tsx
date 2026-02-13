@@ -133,11 +133,11 @@ const eyeParts = [
 export default function EyeDiagram({ selectedAreas, onToggle, conditions = [] }: EyeDiagramProps) {
     return (
         <div className="flex flex-col items-center">
-            <div className="relative w-full max-w-[320px] aspect-[4/3] mx-auto bg-gradient-to-br from-sky-50 via-blue-50/30 to-indigo-50 rounded-2xl border-2 border-sky-200/80 shadow-lg p-4 overflow-hidden">
+            <div className="relative w-full max-w-[320px] aspect-[4/3] mx-auto bg-gradient-to-br from-sky-50 via-blue-50/30 to-indigo-50 rounded-2xl border border-sky-200 shadow-sm p-4 overflow-hidden">
                 {/* Instruction Badge */}
-                <div className="absolute top-3 left-3 flex items-center gap-2 text-[10px] font-semibold text-sky-700 uppercase tracking-wide bg-white/90 px-3 py-1.5 rounded-lg backdrop-blur-md border border-sky-300/50 shadow-sm z-10">
+                <div className="absolute top-3 left-3 flex items-center gap-2 text-[10px] font-semibold text-sky-700 uppercase tracking-wide bg-white/80 px-2.5 py-1 rounded-md border border-sky-200 shadow-sm z-10">
                     <Info className="w-3 h-3 text-sky-600" />
-                    <span className="bg-gradient-to-r from-sky-600 to-blue-500 bg-clip-text text-transparent">Eye Cross-Section</span>
+                    <span>Eye Cross-Section</span>
                 </div>
 
                 <svg viewBox="0 0 320 220" className="w-full h-full select-none drop-shadow-md" aria-label="Interactive eye anatomy diagram">

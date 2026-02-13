@@ -5,7 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 
 
-import OrgansDiagram from "./OrgansDiagram";
+import HeartLungDiagram from "./HeartLungDiagram";
 interface Props {
   data: Record<string, any>;
   onChange: (data: Record<string, any>) => void;
@@ -49,8 +49,8 @@ export default function BodySystemCardio({ data, onChange }: Props) {
 
         {/* Anatomical Model */}
         <div className="hidden md:block">
-          <Label className="mb-2 block text-xs text-center text-muted-foreground">Reference</Label>
-          <OrgansDiagram system="cardio" conditions={data.heart_conditions || []} />
+          {/* <Label className="mb-2 block text-xs text-center text-muted-foreground">Reference</Label> */}
+          <HeartLungDiagram conditions={[...(data.heart_conditions || []), ...(data.lung_conditions || [])]} />
         </div>
       </div>
 

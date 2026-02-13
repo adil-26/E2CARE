@@ -84,11 +84,11 @@ const earParts = [
 export default function EarDiagram({ selectedAreas, onToggle }: EarDiagramProps) {
     return (
         <div className="flex flex-col items-center">
-            <div className="relative w-full max-w-[280px] aspect-[4/3] mx-auto bg-gradient-to-br from-blue-50 via-indigo-50/30 to-purple-50 rounded-2xl border-2 border-indigo-200/80 shadow-lg p-4 overflow-hidden">
+            <div className="relative w-full max-w-[280px] aspect-[4/3] mx-auto bg-gradient-to-br from-blue-50 via-indigo-50/30 to-purple-50 rounded-2xl border border-indigo-200 shadow-sm p-4 overflow-hidden">
                 {/* Instruction Badge */}
-                <div className="absolute top-3 left-3 flex items-center gap-2 text-[10px] font-semibold text-indigo-700 uppercase tracking-wide bg-white/90 px-3 py-1.5 rounded-lg backdrop-blur-md border border-indigo-300/50 shadow-sm z-10">
+                <div className="absolute top-3 left-3 flex items-center gap-2 text-[10px] font-semibold text-indigo-700 uppercase tracking-wide bg-white/80 px-2.5 py-1 rounded-md border border-indigo-200 shadow-sm z-10">
                     <Info className="w-3 h-3 text-indigo-600" />
-                    <span className="bg-gradient-to-r from-indigo-600 to-purple-500 bg-clip-text text-transparent">Ear Anatomy</span>
+                    <span>Ear Anatomy</span>
                 </div>
 
                 <svg viewBox="0 0 250 200" className="w-full h-full select-none drop-shadow-md" aria-label="Interactive ear anatomy diagram">
