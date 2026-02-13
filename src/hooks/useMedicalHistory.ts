@@ -50,6 +50,7 @@ export function useMedicalHistory() {
       const { data, error } = await supabase
         .from("medical_history")
         .select("*")
+        .eq("user_id", user!.id)
         .maybeSingle();
       if (error) throw error;
       return data as (MedicalHistoryData & { id: string }) | null;
@@ -76,7 +77,23 @@ export function useMedicalHistory() {
           .insert({ ...defaultData, ...updates, user_id: user.id })
           .select()
           .single();
-        if (error) throw error;
+
+        if (error) {
+          // Check for unique key violation (record already exists)
+          if (error.code === '23505') {
+            console.warn("Medical history exists (duplicate key), falling back to update.");
+            const { data: updateData, error: updateError } = await supabase
+              .from("medical_history")
+              .update(updates)
+              .eq("user_id", user.id)
+              .select()
+              .single();
+
+            if (updateError) throw updateError;
+            return updateData;
+          }
+          throw error;
+        }
         return data;
       }
     },

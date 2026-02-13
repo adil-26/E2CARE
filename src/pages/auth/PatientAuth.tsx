@@ -110,8 +110,8 @@ export default function PatientAuth() {
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-md">
         <div className="mb-6 text-center">
           <div className="mb-4 flex justify-center">
-            <div className="rounded-xl bg-primary/10 px-4 py-2">
-              <img src="/logo.png" alt="E2Care" className="h-16 w-auto" />
+            <div className="rounded-xl bg-primary/10 px-4 py-4">
+              <img src="/logo.png" alt="E2Care" className="h-20 w-auto" />
             </div>
           </div>
           <h1 className="font-display text-2xl font-bold text-foreground">Patient Portal</h1>
