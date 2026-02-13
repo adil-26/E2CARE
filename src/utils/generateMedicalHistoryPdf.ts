@@ -1,3 +1,4 @@
+
 import jsPDF from "jspdf";
 import { autoTable } from "jspdf-autotable";
 
@@ -51,14 +52,12 @@ const STEPS = [
   { key: "lifestyle", label: "Lifestyle", icon: "🏃", color: COLORS.success, bgColor: COLORS.successBg },
 ];
 
-// Format a key like "delivery_type" → "Delivery Type"
 function formatKey(key: string): string {
   return key
     .replace(/_/g, " ")
     .replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
-// Format values for display
 function formatValue(value: any): string {
   if (value === null || value === undefined || value === "") return "—";
   if (Array.isArray(value)) {
@@ -96,6 +95,7 @@ function addSectionHeader(doc: jsPDF, y: number, step: typeof STEPS[number], pag
   // We keep it just in case individual renderers call it, but we style it cleanly.
   y = checkPageBreak(doc, y, 20);
 
+  const margin = 15;
   doc.setFontSize(11);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(...COLORS.primary);
@@ -556,138 +556,143 @@ export async function generateMedicalHistoryPdf(
   history: MedicalHistoryForPdf,
   patientName?: string
 ) {
-  const doc = new jsPDF("p", "mm", "a4");
-  const pageW = doc.internal.pageSize.getWidth();
-  const margin = 15;
-  const contentW = pageW - margin * 2;
-
-  // Load logo
-  const logoUrl = "/logo.png";
-  let logoData: string | null = null;
   try {
-    const response = await fetch(logoUrl);
-    const blob = await response.blob();
-    logoData = await new Promise((resolve) => {
-      const reader = new FileReader();
-      reader.onloadend = () => resolve(reader.result as string);
-      reader.readAsDataURL(blob);
-    });
-  } catch (error) {
-    console.warn("Failed to load logo", error);
-  }
+    const doc = new jsPDF("p", "mm", "a4");
+    const pageW = doc.internal.pageSize.getWidth();
+    const margin = 15;
+    const contentW = pageW - margin * 2;
 
-  // ─── Cover Header ───
-  // Modern Header Background
-  doc.setFillColor(248, 250, 252); // slate-50
-  doc.rect(0, 0, pageW, 55, "F");
+    // Load logo
+    const logoUrl = "/logo.png";
+    let logoData: string | null = null;
+    try {
+      const response = await fetch(logoUrl);
+      const blob = await response.blob();
+      logoData = await new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.readAsDataURL(blob);
+      });
+    } catch (error) {
+      console.warn("Failed to load logo", error);
+    }
 
-  // Top Accent
-  doc.setFillColor(...COLORS.primary);
-  doc.rect(0, 0, pageW, 3, "F");
+    // ─── Cover Header ───
+    // Modern Header Background
+    doc.setFillColor(248, 250, 252); // slate-50
+    doc.rect(0, 0, pageW, 55, "F");
 
-  // Logo
-  if (logoData) {
-    doc.addImage(logoData, "PNG", margin, 15, 12, 12);
-  }
+    // Top Accent
+    doc.setFillColor(...COLORS.primary);
+    doc.rect(0, 0, pageW, 3, "F");
 
-  // App Branding
-  doc.setFontSize(16);
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(...COLORS.primary);
-  doc.text("My Health Compass", logoData ? margin + 16 : margin, 20);
+    // Logo
+    if (logoData) {
+      doc.addImage(logoData, "PNG", margin, 15, 12, 12);
+    }
 
-  doc.setFontSize(9);
-  doc.setFont("helvetica", "normal");
-  doc.setTextColor(...COLORS.muted);
-  doc.text("Comprehensive Medical History Record", logoData ? margin + 16 : margin, 25);
+    // App Branding
+    doc.setFontSize(16);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(...COLORS.primary);
+    doc.text("My Health Compass", logoData ? margin + 16 : margin, 20);
 
-  // Divider
-  doc.setDrawColor(...COLORS.border);
-  doc.line(margin, 55, pageW - margin, 55);
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(...COLORS.muted);
+    doc.text("Comprehensive Medical History Record", logoData ? margin + 16 : margin, 25);
 
-  // Patient Info (Right Aligned)
-  doc.setFontSize(22);
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(...COLORS.dark);
-  doc.text(patientName || "Patient Record", pageW - margin, 22, { align: "right" });
+    // Divider
+    doc.setDrawColor(...COLORS.border);
+    doc.line(margin, 55, pageW - margin, 55);
 
-  // Stats on right
-  const filledCount = STEPS.filter(
-    (s) => Object.keys((history as any)[s.key] || {}).length > 0
-  ).length;
-  const completion = Math.round((filledCount / STEPS.length) * 100);
+    // Patient Info (Right Aligned)
+    doc.setFontSize(22);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(...COLORS.dark);
+    doc.text(patientName || "Patient Record", pageW - margin, 22, { align: "right" });
 
-  doc.setFontSize(10);
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(...COLORS.success);
-  doc.text(`${completion}% Completed`, pageW - margin, 32, { align: "right" });
+    // Stats on right
+    const filledCount = STEPS.filter(
+      (s) => Object.keys((history as any)[s.key] || {}).length > 0
+    ).length;
+    const completion = Math.round((filledCount / STEPS.length) * 100);
 
-  doc.setFontSize(8);
-  doc.setFont("helvetica", "normal");
-  doc.setTextColor(...COLORS.muted);
-  doc.text(`Generated: ${new Date().toLocaleDateString("en-IN", { day: "2-digit", month: "long", year: "numeric" })}`, pageW - margin, 38, { align: "right" });
-  doc.text(`Status: ${history.is_complete ? "Finalized" : "Draft / In Progress"}`, pageW - margin, 43, { align: "right" });
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(...COLORS.success);
+    doc.text(`${completion}% Completed`, pageW - margin, 32, { align: "right" });
 
-  // ─── Start Content ───
-  let y = 65;
-
-  // ─── Progress bar ───
-  doc.setDrawColor(...COLORS.border);
-  doc.setFillColor(241, 245, 249); // slate-100
-  doc.roundedRect(margin, y, contentW, 6, 3, 3, "FD");
-
-  doc.setFillColor(...COLORS.primary);
-  doc.roundedRect(margin, y, Math.max(contentW * (completion / 100), 6), 6, 3, 3, "F");
-  y += 18;
-
-  // ─── Table of Contents ───
-  doc.setFontSize(10);
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(...COLORS.dark);
-  doc.text("Table of Contents", margin, y);
-  y += 6;
-
-  STEPS.forEach((step, i) => {
-    const filled = Object.keys((history as any)[step.key] || {}).length > 0;
     doc.setFontSize(8);
     doc.setFont("helvetica", "normal");
-    const textColor = filled ? COLORS.dark : COLORS.muted;
-    doc.setTextColor(textColor[0], textColor[1], textColor[2]);
-    doc.text(`${step.icon}  ${i + 1}. ${step.label}`, margin + 4, y);
-    const statusColor = filled ? COLORS.success : COLORS.muted;
-    doc.setTextColor(statusColor[0], statusColor[1], statusColor[2]);
-    doc.text(filled ? "✓ Filled" : "○ Empty", pageW - margin, y, { align: "right" });
-    y += 5.5;
-  });
+    doc.setTextColor(...COLORS.muted);
+    doc.text(`Generated: ${new Date().toLocaleDateString("en-IN", { day: "2-digit", month: "long", year: "numeric" })}`, pageW - margin, 38, { align: "right" });
+    doc.text(`Status: ${history.is_complete ? "Finalized" : "Draft / In Progress"}`, pageW - margin, 43, { align: "right" });
 
-  y += 6;
+    // ─── Start Content ───
+    let y = 65;
 
-  // ─── Render each section ───
-  const renderers = [
-    renderBirthHistory,
-    renderChildhoodIllnesses,
-    renderMedicalConditions,
-    renderFamilyHistory,
-    renderGenderHealth,
-    renderSurgeries,
-    renderAllergies,
-    renderBodySystems,
-    renderLifestyle,
-  ];
+    // ─── Progress bar ───
+    doc.setDrawColor(...COLORS.border);
+    doc.setFillColor(241, 245, 249); // slate-100
+    doc.roundedRect(margin, y, contentW, 6, 3, 3, "FD");
 
-  STEPS.forEach((step, i) => {
-    const sectionData = (history as any)[step.key] || {};
-    if (Object.keys(sectionData).length === 0) return;
-    y = renderers[i](doc, y, sectionData, pageW);
-    y += 2;
-  });
+    doc.setFillColor(...COLORS.primary);
+    doc.roundedRect(margin, y, Math.max(contentW * (completion / 100), 6), 6, 3, 3, "F");
+    y += 18;
 
-  // ─── Footers ───
-  const totalPages = doc.getNumberOfPages();
-  for (let p = 1; p <= totalPages; p++) {
-    doc.setPage(p);
-    addFooter(doc, p, totalPages);
+    // ─── Table of Contents ───
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(...COLORS.dark);
+    doc.text("Table of Contents", margin, y);
+    y += 6;
+
+    STEPS.forEach((step, i) => {
+      const filled = Object.keys((history as any)[step.key] || {}).length > 0;
+      doc.setFontSize(8);
+      doc.setFont("helvetica", "normal");
+      const textColor = filled ? COLORS.dark : COLORS.muted;
+      doc.setTextColor(textColor[0], textColor[1], textColor[2]);
+      doc.text(`${step.icon}  ${i + 1}. ${step.label}`, margin + 4, y);
+      const statusColor = filled ? COLORS.success : COLORS.muted;
+      doc.setTextColor(statusColor[0], statusColor[1], statusColor[2]);
+      doc.text(filled ? "✓ Filled" : "○ Empty", pageW - margin, y, { align: "right" });
+      y += 5.5;
+    });
+
+    y += 6;
+
+    // ─── Render each section ───
+    const renderers = [
+      renderBirthHistory,
+      renderChildhoodIllnesses,
+      renderMedicalConditions,
+      renderFamilyHistory,
+      renderGenderHealth,
+      renderSurgeries,
+      renderAllergies,
+      renderBodySystems,
+      renderLifestyle,
+    ];
+
+    STEPS.forEach((step, i) => {
+      const sectionData = (history as any)[step.key] || {};
+      if (Object.keys(sectionData).length === 0) return;
+      y = renderers[i](doc, y, sectionData, pageW);
+      y += 2;
+    });
+
+    // ─── Footers ───
+    const totalPages = doc.getNumberOfPages();
+    for (let p = 1; p <= totalPages; p++) {
+      doc.setPage(p);
+      addFooter(doc, p, totalPages);
+    }
+
+    doc.save(`Medical_History_${(patientName || "Patient").replace(/\s+/g, "_")}.pdf`);
+  } catch (err: any) {
+    console.error("PDF Generation Error (Medical History):", err);
+    alert(`Failed to generate PDF. Error: ${err.message}`);
   }
-
-  doc.save(`Medical_History_${(patientName || "Patient").replace(/\s+/g, "_")}.pdf`);
 }
