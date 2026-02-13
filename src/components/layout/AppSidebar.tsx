@@ -62,7 +62,9 @@ export default function AppSidebar() {
     <Sidebar>
       <SidebarHeader className="p-4">
         <div className="flex items-center gap-3">
-          <img src="/logo.png" alt="E2Care" className="h-10 w-auto" />
+          <div className="flex items-center justify-center rounded-lg bg-primary/10 px-3 py-1.5">
+            <img src="/logo.png" alt="E2Care" className="h-12 w-auto" />
+          </div>
         </div>
       </SidebarHeader>
 
