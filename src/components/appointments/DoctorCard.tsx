@@ -67,17 +67,17 @@ export default function DoctorCard({ doctor, onBook }: DoctorCardProps) {
               </span>
             </div>
 
-            <div className="flex items-center justify-between mt-3">
+            <div className="flex flex-wrap items-center justify-between mt-3 gap-2">
               {doctor.languages && (
                 <div className="flex gap-1 flex-wrap">
                   {doctor.languages.slice(0, 3).map((lang) => (
-                    <span key={lang} className="rounded-full bg-muted px-2 py-0.5 text-[9px] text-muted-foreground">
+                    <span key={lang} className="rounded-full bg-muted px-2 py-0.5 text-[9px] text-muted-foreground whitespace-nowrap">
                       {lang}
                     </span>
                   ))}
                 </div>
               )}
-              <Button size="sm" className="text-xs h-8 ml-auto" onClick={() => onBook(doctor)}>
+              <Button size="sm" className="text-xs h-8 ml-auto flex-shrink-0" onClick={() => onBook(doctor)}>
                 Book Now
               </Button>
             </div>

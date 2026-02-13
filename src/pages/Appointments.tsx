@@ -71,21 +71,19 @@ export default function Appointments() {
       <div className="flex gap-2">
         <button
           onClick={() => setTab("find")}
-          className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-medium transition-colors ${
-            tab === "find"
+          className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-medium transition-colors ${tab === "find"
               ? "bg-primary text-primary-foreground shadow-sm"
               : "bg-muted text-muted-foreground hover:bg-accent"
-          }`}
+            }`}
         >
           <Users className="h-3.5 w-3.5" /> Find Doctor
         </button>
         <button
           onClick={() => setTab("my")}
-          className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-medium transition-colors ${
-            tab === "my"
+          className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-medium transition-colors ${tab === "my"
               ? "bg-primary text-primary-foreground shadow-sm"
               : "bg-muted text-muted-foreground hover:bg-accent"
-          }`}
+            }`}
         >
           <Calendar className="h-3.5 w-3.5" /> My Appointments
           {upcomingAppointments.length > 0 && (
@@ -111,16 +109,15 @@ export default function Appointments() {
           </div>
 
           {/* Specialty filter pills */}
-          <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none -mx-1 px-1">
+          <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none -mx-1 px-1 snap-x">
             {SPECIALTIES.map((spec) => (
               <button
                 key={spec}
                 onClick={() => setActiveSpec(spec)}
-                className={`flex-shrink-0 px-3 py-1.5 rounded-full text-[11px] font-medium transition-colors ${
-                  activeSpec === spec
+                className={`flex-shrink-0 px-3 py-1.5 rounded-full text-[11px] font-medium transition-colors ${activeSpec === spec
                     ? "bg-primary text-primary-foreground shadow-sm"
                     : "bg-muted text-muted-foreground hover:bg-accent"
-                }`}
+                  }`}
               >
                 {spec}
               </button>
@@ -171,7 +168,7 @@ export default function Appointments() {
                 <AppointmentCard
                   key={appt.id}
                   appointment={appt}
-                  onCancel={() => {}}
+                  onCancel={() => { }}
                   isCancelling={false}
                 />
               ))}

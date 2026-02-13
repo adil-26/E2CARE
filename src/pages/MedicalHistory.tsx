@@ -142,36 +142,23 @@ export default function MedicalHistory() {
 
   return (
     <>
-    <CompletionCelebration show={showCelebration} onClose={handleCloseCelebration} />
-    <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="space-y-3 sm:space-y-4 overflow-x-hidden">
-      <div className="flex items-center justify-between">
-        <h2 className="font-display text-lg sm:text-xl font-bold text-foreground">Medical History</h2>
-        <Button
-          variant="outline"
-          size="sm"
-          className="gap-1.5 text-xs"
-          onClick={() => generateMedicalHistoryPdf(history as any, patientName)}
-          disabled={completionPercent === 0}
-        >
-          <Download className="h-3.5 w-3.5" /> Download PDF
-        </Button>
-      </div>
+      <CompletionCelebration show={showCelebration} onClose={handleCloseCelebration} />
+      <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="space-y-3 sm:space-y-4 overflow-x-hidden">
+        <div className="flex items-center justify-between">
+          <h2 className="font-display text-lg sm:text-xl font-bold text-foreground">Medical History</h2>
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-1.5 text-xs"
+            onClick={() => generateMedicalHistoryPdf(history as any, patientName)}
+            disabled={completionPercent === 0}
+          >
+            <Download className="h-3.5 w-3.5" /> Download PDF
+          </Button>
+        </div>
 
-      {/* Mobile nav on top */}
-      <div className="md:hidden">
-        <StepNavigation
-          steps={STEPS}
-          currentStep={currentStep}
-          onStepChange={setCurrentStep}
-          filledSteps={localData}
-          completionPercent={completionPercent}
-        />
-      </div>
-
-      {/* Desktop: sidebar + content layout */}
-      <div className="flex gap-6">
-        {/* Desktop sidebar stepper */}
-        <div className="hidden md:block md:w-56 lg:w-64 flex-shrink-0">
+        {/* Mobile nav on top */}
+        <div className="md:hidden">
           <StepNavigation
             steps={STEPS}
             currentStep={currentStep}
@@ -181,71 +168,84 @@ export default function MedicalHistory() {
           />
         </div>
 
-        {/* Step content */}
-        <div className="flex-1 min-w-0 space-y-3 sm:space-y-4">
-          <Card className="shadow-sm border-border/60">
-            <CardContent className="p-3.5 sm:p-5 md:p-6">
-              {/* Step header */}
-              <div className="mb-3 sm:mb-4 flex items-center gap-2">
-                <span className="text-xl sm:text-2xl">{STEPS[currentStep].icon}</span>
-                <div>
-                  <h3 className="font-display text-base sm:text-lg font-semibold text-foreground leading-tight">
-                    {STEPS[currentStep].label}
-                  </h3>
-                  <p className="text-[11px] sm:text-xs text-muted-foreground">
-                    Step {currentStep + 1} of {STEPS.length}
-                  </p>
+        {/* Desktop: sidebar + content layout */}
+        <div className="flex flex-col md:flex-row gap-6">
+          {/* Desktop sidebar stepper */}
+          <div className="hidden md:block md:w-56 lg:w-64 flex-shrink-0">
+            <StepNavigation
+              steps={STEPS}
+              currentStep={currentStep}
+              onStepChange={setCurrentStep}
+              filledSteps={localData}
+              completionPercent={completionPercent}
+            />
+          </div>
+
+          {/* Step content */}
+          <div className="flex-1 min-w-0 space-y-3 sm:space-y-4">
+            <Card className="shadow-sm border-border/60">
+              <CardContent className="p-3.5 sm:p-5 md:p-6">
+                {/* Step header */}
+                <div className="mb-3 sm:mb-4 flex items-center gap-2">
+                  <span className="text-xl sm:text-2xl">{STEPS[currentStep].icon}</span>
+                  <div>
+                    <h3 className="font-display text-base sm:text-lg font-semibold text-foreground leading-tight">
+                      {STEPS[currentStep].label}
+                    </h3>
+                    <p className="text-[11px] sm:text-xs text-muted-foreground">
+                      Step {currentStep + 1} of {STEPS.length}
+                    </p>
+                  </div>
                 </div>
-              </div>
 
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={stepKey}
-                  initial={{ opacity: 0, x: 16 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -16 }}
-                  transition={{ duration: 0.18 }}
-                >
-                  {renderStep()}
-                </motion.div>
-              </AnimatePresence>
-            </CardContent>
-          </Card>
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={stepKey}
+                    initial={{ opacity: 0, x: 16 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -16 }}
+                    transition={{ duration: 0.18 }}
+                  >
+                    {renderStep()}
+                  </motion.div>
+                </AnimatePresence>
+              </CardContent>
+            </Card>
 
-          {/* Navigation buttons — extra bottom margin on mobile to clear bottom nav */}
-          <div className="flex items-center justify-between pb-2 sm:pb-0">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handlePrev}
-              disabled={currentStep === 0}
-              className="gap-1 text-xs sm:text-sm"
-            >
-              <ChevronLeft className="h-4 w-4" /> Back
-            </Button>
+            {/* Navigation buttons — extra bottom margin on mobile to clear bottom nav */}
+            <div className="flex items-center justify-between pb-2 sm:pb-0">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handlePrev}
+                disabled={currentStep === 0}
+                className="gap-1 text-xs sm:text-sm"
+              >
+                <ChevronLeft className="h-4 w-4" /> Back
+              </Button>
 
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleSave}
-              disabled={saveStep.isPending}
-              className="gap-1 text-xs sm:text-sm"
-            >
-              <Save className="h-4 w-4" /> Save
-            </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleSave}
+                disabled={saveStep.isPending}
+                className="gap-1 text-xs sm:text-sm"
+              >
+                <Save className="h-4 w-4" /> Save
+              </Button>
 
-            <Button
-              size="sm"
-              onClick={handleNext}
-              disabled={saveStep.isPending}
-              className="gap-1 text-xs sm:text-sm"
-            >
-              {currentStep === STEPS.length - 1 ? "Done" : "Next"} <ChevronRight className="h-4 w-4" />
-            </Button>
+              <Button
+                size="sm"
+                onClick={handleNext}
+                disabled={saveStep.isPending}
+                className="gap-1 text-xs sm:text-sm"
+              >
+                {currentStep === STEPS.length - 1 ? "Done" : "Next"} <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
         </div>
-      </div>
-    </motion.div>
+      </motion.div>
     </>
   );
 }
