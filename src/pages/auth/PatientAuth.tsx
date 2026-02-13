@@ -9,14 +9,16 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { User, Mail, Lock, Loader2, ArrowLeft } from "lucide-react";
+import { User, Mail, Lock, Loader2, ArrowLeft, Gift } from "lucide-react";
 import { motion } from "framer-motion";
 import { z } from "zod";
 
 const emailSchema = z.string().email("Please enter a valid email address");
 const passwordSchema = z.string().min(6, "Password must be at least 6 characters");
 const nameSchema = z.string().min(2, "Name must be at least 2 characters");
+const genderSchema = z.string().min(1, "Please select your gender");
 
 export default function PatientAuth() {
   const [isLoading, setIsLoading] = useState(false);
@@ -26,6 +28,8 @@ export default function PatientAuth() {
   const [signupEmail, setSignupEmail] = useState("");
   const [signupPassword, setSignupPassword] = useState("");
   const [signupName, setSignupName] = useState("");
+  const [signupGender, setSignupGender] = useState("");
+  const [signupReferralCode, setSignupReferralCode] = useState("");
   const { signIn, signUp, user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -56,8 +60,8 @@ export default function PatientAuth() {
       const message = error.message.includes("Invalid login")
         ? "Invalid email or password."
         : error.message.includes("Email not confirmed")
-        ? "Please verify your email before signing in."
-        : error.message;
+          ? "Please verify your email before signing in."
+          : error.message;
       toast({ title: "Login Failed", description: message, variant: "destructive" });
     }
   };
@@ -68,6 +72,7 @@ export default function PatientAuth() {
       nameSchema.parse(signupName);
       emailSchema.parse(signupEmail);
       passwordSchema.parse(signupPassword);
+      genderSchema.parse(signupGender);
     } catch (err) {
       if (err instanceof z.ZodError) {
         toast({ title: "Validation Error", description: err.errors[0].message, variant: "destructive" });
@@ -75,7 +80,8 @@ export default function PatientAuth() {
       }
     }
     setIsLoading(true);
-    const { error } = await signUp(signupEmail, signupPassword, signupName);
+    setIsLoading(true);
+    const { error } = await signUp(signupEmail, signupPassword, signupName, signupGender, signupReferralCode);
     setIsLoading(false);
     if (error) {
       const message = error.message.includes("already registered")
@@ -170,6 +176,19 @@ export default function PatientAuth() {
                     </div>
                   </div>
                   <div className="space-y-2">
+                    <Label>Gender</Label>
+                    <Select value={signupGender} onValueChange={setSignupGender}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select gender" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="male">Male</SelectItem>
+                        <SelectItem value="female">Female</SelectItem>
+                        <SelectItem value="other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
                     <Label>Email</Label>
                     <div className="relative">
                       <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -181,6 +200,13 @@ export default function PatientAuth() {
                     <div className="relative">
                       <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                       <Input type="password" placeholder="Min 6 characters" className="pl-10" value={signupPassword} onChange={(e) => setSignupPassword(e.target.value)} required />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Referral Code (Optional)</Label>
+                    <div className="relative">
+                      <Gift className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                      <Input placeholder="Enter referral code" className="pl-10" value={signupReferralCode} onChange={(e) => setSignupReferralCode(e.target.value)} />
                     </div>
                   </div>
                   <Button type="submit" className="w-full" disabled={isLoading}>
