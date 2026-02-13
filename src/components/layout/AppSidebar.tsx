@@ -62,13 +62,7 @@ export default function AppSidebar() {
     <Sidebar>
       <SidebarHeader className="p-4">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl health-gradient shadow-md">
-            <Heart className="h-5 w-5 text-primary-foreground" />
-          </div>
-          <div>
-            <h2 className="font-display text-lg font-bold text-sidebar-foreground">E2Care</h2>
-            <p className="text-xs text-muted-foreground">Patient Portal</p>
-          </div>
+          <img src="/logo.png" alt="E2Care" className="h-10 w-auto" />
         </div>
       </SidebarHeader>
 
