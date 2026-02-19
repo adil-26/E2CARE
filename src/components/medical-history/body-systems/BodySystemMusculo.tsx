@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 
 import { cn } from "@/lib/utils";
 import SkeletonDiagram from "./SkeletonDiagram";
-import Skeleton3D from "./Skeleton3D";
+import ProceduralSkeleton from "./ProceduralSkeleton";
 import { Switch } from "@/components/ui/switch";
 import { useState } from "react";
 
@@ -76,7 +76,7 @@ export default function BodySystemMusculo({ data, onChange }: Props) {
         </div>
 
         {view3D ? (
-          <Skeleton3D
+          <ProceduralSkeleton
             highlightedBones={data.pain_areas || []}
             onToggle={togglePainArea}
           />

@@ -3,7 +3,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Plus, Trash2 } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Plus, Trash2, Stethoscope } from "lucide-react";
 
 interface Surgery {
   name: string;
@@ -20,6 +21,17 @@ interface Hospitalization {
   hospital: string;
 }
 
+interface TreatmentEntry {
+  name: string;
+  type: string;
+  start_date: string;
+  end_date: string;
+  doctor: string;
+  hospital: string;
+  outcome: string;
+  notes: string;
+}
+
 interface StepSurgeriesProps {
   data: Record<string, any>;
   onChange: (data: Record<string, any>) => void;
@@ -27,10 +39,12 @@ interface StepSurgeriesProps {
 
 const emptySurgery: Surgery = { name: "", year: "", hospital: "", reason: "", complications: "" };
 const emptyHospitalization: Hospitalization = { reason: "", year: "", duration: "", hospital: "" };
+const emptyTreatment: TreatmentEntry = { name: "", type: "", start_date: "", end_date: "", doctor: "", hospital: "", outcome: "", notes: "" };
 
 export default function StepSurgeries({ data, onChange }: StepSurgeriesProps) {
   const surgeries: Surgery[] = data.surgeries || [];
   const hospitalizations: Hospitalization[] = data.hospitalizations || [];
+  const treatments: TreatmentEntry[] = data.treatments || [];
 
   const updateSurgery = (index: number, field: keyof Surgery, value: string) => {
     const updated = [...surgeries];
@@ -50,10 +64,19 @@ export default function StepSurgeries({ data, onChange }: StepSurgeriesProps) {
   const addHospitalization = () => onChange({ ...data, hospitalizations: [...hospitalizations, { ...emptyHospitalization }] });
   const removeHospitalization = (i: number) => onChange({ ...data, hospitalizations: hospitalizations.filter((_, idx) => idx !== i) });
 
+  const updateTreatment = (index: number, field: keyof TreatmentEntry, value: string) => {
+    const updated = [...treatments];
+    updated[index] = { ...updated[index], [field]: value };
+    onChange({ ...data, treatments: updated });
+  };
+
+  const addTreatment = () => onChange({ ...data, treatments: [...treatments, { ...emptyTreatment }] });
+  const removeTreatment = (i: number) => onChange({ ...data, treatments: treatments.filter((_, idx) => idx !== i) });
+
   return (
     <div className="space-y-5 overflow-hidden">
       <p className="text-xs sm:text-sm text-muted-foreground">
-        List any surgeries or hospitalizations you've had. This is important for your medical records.
+        List any surgeries, hospitalizations, or treatments you've had. This is important for your medical records.
       </p>
 
       {/* Surgeries */}
@@ -145,6 +168,94 @@ export default function StepSurgeries({ data, onChange }: StepSurgeriesProps) {
                     <div className="space-y-1">
                       <Label className="text-[10px] sm:text-xs">Hospital</Label>
                       <Input className="h-10 text-sm" placeholder="Hospital name" value={h.hospital} onChange={(e) => updateHospitalization(i, "hospital", e.target.value)} />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Treatment History - NEW */}
+      <div>
+        <div className="mb-3 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Stethoscope className="h-4 w-4 text-primary" />
+            <Label className="text-xs sm:text-sm font-semibold">Treatment History</Label>
+          </div>
+          <Button type="button" size="sm" variant="outline" onClick={addTreatment} className="h-8 gap-1 text-xs active:scale-95">
+            <Plus className="h-3 w-3" /> Add Treatment
+          </Button>
+        </div>
+        <p className="mb-3 text-xs text-muted-foreground">Record all treatments — medications, therapies, physiotherapy, etc.</p>
+
+        {treatments.length === 0 ? (
+          <p className="text-xs sm:text-sm text-muted-foreground italic">No treatments added. Click "Add Treatment" to record your treatment history.</p>
+        ) : (
+          <div className="space-y-3">
+            {treatments.map((t, i) => (
+              <Card key={i} className="shadow-sm border-l-4 border-l-primary/40">
+                <CardContent className="p-3 sm:p-4">
+                  <div className="mb-2 flex items-center justify-between">
+                    <span className="text-xs font-medium text-muted-foreground">Treatment {i + 1}{t.name ? ` — ${t.name}` : ""}</span>
+                    <Button type="button" size="icon" variant="ghost" className="h-7 w-7 text-destructive" onClick={() => removeTreatment(i)}>
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                  <div className="grid gap-2.5 sm:gap-3 grid-cols-1 sm:grid-cols-2">
+                    <div className="space-y-1">
+                      <Label className="text-[10px] sm:text-xs">Treatment Name</Label>
+                      <Input className="h-10 text-sm" placeholder="e.g. Chemotherapy, Physiotherapy" value={t.name} onChange={(e) => updateTreatment(i, "name", e.target.value)} />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-[10px] sm:text-xs">Treatment Type</Label>
+                      <Select value={t.type} onValueChange={(v) => updateTreatment(i, "type", v)}>
+                        <SelectTrigger className="h-10 text-xs sm:text-sm"><SelectValue placeholder="Select type..." /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="medication">💊 Medication</SelectItem>
+                          <SelectItem value="surgery">🏥 Surgery</SelectItem>
+                          <SelectItem value="therapy">🧠 Therapy / Counseling</SelectItem>
+                          <SelectItem value="physiotherapy">🦾 Physiotherapy</SelectItem>
+                          <SelectItem value="radiation">☢️ Radiation</SelectItem>
+                          <SelectItem value="chemotherapy">💉 Chemotherapy</SelectItem>
+                          <SelectItem value="ayurveda">🌿 Ayurveda / Homeopathy</SelectItem>
+                          <SelectItem value="other">📋 Other</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-[10px] sm:text-xs">Start Date</Label>
+                      <Input className="h-10 text-sm" type="date" value={t.start_date} onChange={(e) => updateTreatment(i, "start_date", e.target.value)} />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-[10px] sm:text-xs">End Date (leave blank if ongoing)</Label>
+                      <Input className="h-10 text-sm" type="date" value={t.end_date} onChange={(e) => updateTreatment(i, "end_date", e.target.value)} />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-[10px] sm:text-xs">Doctor / Specialist</Label>
+                      <Input className="h-10 text-sm" placeholder="Dr. name" value={t.doctor} onChange={(e) => updateTreatment(i, "doctor", e.target.value)} />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-[10px] sm:text-xs">Hospital / Clinic</Label>
+                      <Input className="h-10 text-sm" placeholder="Hospital or clinic name" value={t.hospital} onChange={(e) => updateTreatment(i, "hospital", e.target.value)} />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-[10px] sm:text-xs">Outcome</Label>
+                      <Select value={t.outcome} onValueChange={(v) => updateTreatment(i, "outcome", v)}>
+                        <SelectTrigger className="h-10 text-xs sm:text-sm"><SelectValue placeholder="Select outcome..." /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="cured">✅ Cured / Resolved</SelectItem>
+                          <SelectItem value="improved">📈 Improved</SelectItem>
+                          <SelectItem value="ongoing">🔄 Ongoing</SelectItem>
+                          <SelectItem value="no_change">➡️ No Change</SelectItem>
+                          <SelectItem value="worsened">📉 Worsened</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-1 sm:col-span-2">
+                      <Label className="text-[10px] sm:text-xs">Notes</Label>
+                      <Input className="h-10 text-sm" placeholder="Any additional details about this treatment..." value={t.notes} onChange={(e) => updateTreatment(i, "notes", e.target.value)} />
                     </div>
                   </div>
                 </CardContent>

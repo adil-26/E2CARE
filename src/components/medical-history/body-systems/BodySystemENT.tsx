@@ -16,6 +16,8 @@ interface Props {
 const earConditions = ["Hearing Loss", "Tinnitus", "Ear Infections", "Vertigo", "Earwax Buildup", "Perforated Eardrum"];
 const noseConditions = ["Sinusitis", "Nasal Polyps", "Deviated Septum", "Allergic Rhinitis", "Frequent Nosebleeds", "Loss of Smell"];
 const throatConditions = ["Tonsillitis", "Sore Throat (recurrent)", "Difficulty Swallowing", "Snoring / Sleep Apnea", "Voice Changes", "Acid Reflux"];
+const tongueConditions = ["Coated Tongue", "Geographic Tongue", "Tongue Ulcers", "Burning Sensation", "Swollen Tongue", "Tongue Tie", "Dry Mouth", "Taste Changes"];
+const gumConditions = ["Bleeding Gums", "Gum Recession", "Gingivitis", "Periodontitis", "Gum Swelling", "Gum Pain", "Gum Abscess", "Sensitive Gums"];
 
 export default function BodySystemENT({ data, onChange }: Props) {
   const update = (key: string, value: any) => onChange({ ...data, [key]: value });
@@ -166,6 +168,78 @@ export default function BodySystemENT({ data, onChange }: Props) {
                 </SelectContent>
               </Select>
             </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Tongue - NEW */}
+      <Card className="shadow-sm border-l-4 border-l-orange-400">
+        <CardContent className="p-3 sm:p-4">
+          <Label className="mb-3 block text-sm font-semibold">👅 Tongue</Label>
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+            {tongueConditions.map((cond) => (
+              <label key={cond} className="flex items-center gap-2.5 rounded-lg border border-border p-2.5 min-h-[44px] text-xs sm:text-sm cursor-pointer hover:bg-accent active:bg-accent/80 transition-colors">
+                <Checkbox
+                  checked={(data.tongue_conditions || []).includes(cond)}
+                  onCheckedChange={() => toggleItem(data.tongue_conditions || [], cond, "tongue_conditions")}
+                />
+                {cond}
+              </label>
+            ))}
+          </div>
+          <div className="mt-3 space-y-1">
+            <Label className="text-xs">Tongue Notes</Label>
+            <Textarea
+              placeholder="Any other tongue-related details..."
+              value={data.tongue_notes || ""}
+              onChange={(e) => update("tongue_notes", e.target.value)}
+              rows={2}
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Gums - NEW */}
+      <Card className="shadow-sm border-l-4 border-l-pink-400">
+        <CardContent className="p-3 sm:p-4">
+          <Label className="mb-3 block text-sm font-semibold">🩸 Gums & Oral Health</Label>
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+            {gumConditions.map((cond) => (
+              <label key={cond} className="flex items-center gap-2.5 rounded-lg border border-border p-2.5 min-h-[44px] text-xs sm:text-sm cursor-pointer hover:bg-accent active:bg-accent/80 transition-colors">
+                <Checkbox
+                  checked={(data.gum_conditions || []).includes(cond)}
+                  onCheckedChange={() => toggleItem(data.gum_conditions || [], cond, "gum_conditions")}
+                />
+                {cond}
+              </label>
+            ))}
+          </div>
+          <div className="mt-3 grid gap-3 grid-cols-1 sm:grid-cols-2">
+            <div className="space-y-1">
+              <Label className="text-xs">Last Gum Treatment</Label>
+              <Input className="h-10" type="date" value={data.last_gum_treatment || ""} onChange={(e) => update("last_gum_treatment", e.target.value)} />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Gum Treatment Type</Label>
+              <Select value={data.gum_treatment_type || ""} onValueChange={(v) => update("gum_treatment_type", v)}>
+                <SelectTrigger className="h-10"><SelectValue placeholder="Select..." /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">None</SelectItem>
+                  <SelectItem value="scaling">Scaling / Cleaning</SelectItem>
+                  <SelectItem value="surgery">Gum Surgery</SelectItem>
+                  <SelectItem value="medication">Medication</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div className="mt-3 space-y-1">
+            <Label className="text-xs">Gum Notes</Label>
+            <Textarea
+              placeholder="Any other gum-related details..."
+              value={data.gum_notes || ""}
+              onChange={(e) => update("gum_notes", e.target.value)}
+              rows={2}
+            />
           </div>
         </CardContent>
       </Card>

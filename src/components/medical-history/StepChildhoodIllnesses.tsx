@@ -3,6 +3,11 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 
+interface IllnessEntry {
+  illness: string;
+  from_date?: string;
+}
+
 interface StepChildhoodIllnessesProps {
   data: Record<string, any>;
   onChange: (data: Record<string, any>) => void;
@@ -23,15 +28,28 @@ const vaccines = [
 ];
 
 export default function StepChildhoodIllnesses({ data, onChange }: StepChildhoodIllnessesProps) {
-  const selected: string[] = data.illnesses || [];
+  // Support both old format (string[]) and new format ({illness, from_date}[])
+  const illnessEntries: IllnessEntry[] = (data.illness_entries || []);
+  const selected: string[] = illnessEntries.map((e) => e.illness);
   const selectedVaccines: string[] = data.vaccines || [];
 
   const toggleIllness = (illness: string) => {
-    const updated = selected.includes(illness)
-      ? selected.filter((i) => i !== illness)
-      : [...selected, illness];
-    onChange({ ...data, illnesses: updated });
+    const isSelected = selected.includes(illness);
+    const updated = isSelected
+      ? illnessEntries.filter((e) => e.illness !== illness)
+      : [...illnessEntries, { illness, from_date: "" }];
+    onChange({ ...data, illness_entries: updated, illnesses: updated.map((e) => e.illness) });
   };
+
+  const updateIllnessDate = (illness: string, from_date: string) => {
+    const updated = illnessEntries.map((e) =>
+      e.illness === illness ? { ...e, from_date } : e
+    );
+    onChange({ ...data, illness_entries: updated });
+  };
+
+  const getIllnessDate = (illness: string) =>
+    illnessEntries.find((e) => e.illness === illness)?.from_date || "";
 
   const toggleVaccine = (vaccine: string) => {
     const updated = selectedVaccines.includes(vaccine)
@@ -49,19 +67,36 @@ export default function StepChildhoodIllnesses({ data, onChange }: StepChildhood
       <div>
         <Label className="mb-2.5 block text-xs sm:text-sm font-semibold">Childhood Illnesses</Label>
         <div className="grid grid-cols-2 gap-1.5 sm:gap-2 sm:grid-cols-3">
-          {illnesses.map((illness) => (
-            <label
-              key={illness}
-              className="flex items-center gap-2 rounded-lg border border-border p-2 sm:p-2.5 text-[11px] sm:text-sm transition-colors hover:bg-accent cursor-pointer min-h-[40px] min-w-0"
-            >
-              <Checkbox
-                checked={selected.includes(illness)}
-                onCheckedChange={() => toggleIllness(illness)}
-                className="flex-shrink-0"
-              />
-              <span className="break-words leading-tight min-w-0">{illness}</span>
-            </label>
-          ))}
+          {illnesses.map((illness) => {
+            const isChecked = selected.includes(illness);
+            return (
+              <div key={illness} className="flex flex-col gap-1">
+                <label
+                  className={`flex items-center gap-2 rounded-lg border p-2 sm:p-2.5 text-[11px] sm:text-sm transition-colors cursor-pointer min-h-[40px] min-w-0 ${isChecked ? "border-primary/50 bg-primary/5" : "border-border hover:bg-accent"
+                    }`}
+                >
+                  <Checkbox
+                    checked={isChecked}
+                    onCheckedChange={() => toggleIllness(illness)}
+                    className="flex-shrink-0"
+                  />
+                  <span className="break-words leading-tight min-w-0">{illness}</span>
+                </label>
+                {isChecked && (
+                  <div className="px-1">
+                    <Label className="text-[10px] text-muted-foreground">From when?</Label>
+                    <Input
+                      type="month"
+                      className="h-8 text-xs mt-0.5"
+                      value={getIllnessDate(illness)}
+                      onChange={(e) => updateIllnessDate(illness, e.target.value)}
+                      placeholder="MM/YYYY"
+                    />
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       </div>
 

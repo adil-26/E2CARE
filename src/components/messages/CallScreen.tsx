@@ -4,7 +4,8 @@ import { Phone, PhoneOff, Mic, MicOff, Video, VideoOff, Circle } from "lucide-re
 import { Button } from "@/components/ui/button";
 import { CallStatus, CallType } from "@/hooks/useVideoCall";
 
-interface CallScreenProps {
+interface CallScreenProps 
+{
   status: CallStatus;
   callType: CallType;
   callerName: string;
@@ -23,13 +24,15 @@ interface CallScreenProps {
   onToggleRecording?: () => void;
 }
 
-function formatDuration(seconds: number): string {
+function formatDuration(seconds: number): string 
+{
   const m = Math.floor(seconds / 60);
   const s = seconds % 60;
   return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
 }
 
-function getCallingLabel(status: CallStatus, isRemoteOnline: boolean, connectionState?: RTCIceConnectionState): string {
+function getCallingLabel(status: CallStatus, isRemoteOnline: boolean, connectionState?: RTCIceConnectionState): string 
+{
   if (connectionState === "disconnected") return "Reconnecting...";
   if (connectionState === "failed") return "Connection Failed";
   if (status === "calling") return isRemoteOnline ? "Ringing…" : "Calling…";

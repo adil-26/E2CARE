@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
-import { User, Camera, Save, Bell, Moon, Sun, Shield, Loader2 } from "lucide-react";
+import { User, Camera, Save, Bell, Shield, Loader2, QrCode, Download } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,11 +14,15 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { QRCodeSVG } from "qrcode.react";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 export default function SettingsPage() {
   const { user, signOut } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const qrRef = useRef<SVGSVGElement>(null);
+  const { language, setLanguage } = useLanguage();
 
   const { data: profile, isLoading } = useQuery({
     queryKey: ["profile_settings", user?.id],
@@ -116,6 +120,24 @@ export default function SettingsPage() {
     ? form.full_name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)
     : "U";
 
+  const downloadQR = () => {
+    if (!qrRef.current) return;
+    const svg = qrRef.current;
+    const svgData = new XMLSerializer().serializeToString(svg);
+    const canvas = document.createElement("canvas");
+    canvas.width = 200; canvas.height = 200;
+    const ctx = canvas.getContext("2d");
+    const img = new Image();
+    img.onload = () => {
+      ctx?.drawImage(img, 0, 0);
+      const a = document.createElement("a");
+      a.download = `patient-qr-${profile?.medical_id || "code"}.png`;
+      a.href = canvas.toDataURL("image/png");
+      a.click();
+    };
+    img.src = "data:image/svg+xml;base64," + btoa(svgData);
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-16">
@@ -161,6 +183,51 @@ export default function SettingsPage() {
               </div>
             </CardContent>
           </Card>
+
+          {/* Patient QR Card - NEW */}
+          {profile?.medical_id && (
+            <Card className="shadow-sm border-primary/20 bg-gradient-to-br from-primary/5 to-primary/10">
+              <CardHeader className="pb-2">
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <QrCode className="h-4 w-4 text-primary" />
+                  Patient ID Card
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-col sm:flex-row items-center gap-6">
+                  {/* Left: Info */}
+                  <div className="flex items-center gap-4 flex-1">
+                    <Avatar className="h-16 w-16 rounded-xl border-2 border-primary/20">
+                      <AvatarImage src={profile?.profile_photo_url || undefined} className="rounded-xl object-cover" />
+                      <AvatarFallback className="rounded-xl bg-primary/10 text-lg font-bold text-primary">{initials}</AvatarFallback>
+                    </Avatar>
+                    <div className="space-y-1">
+                      <p className="font-semibold text-foreground">{form.full_name || "Patient Name"}</p>
+                      <p className="text-xs text-muted-foreground">{form.blood_group && `Blood: ${form.blood_group}`}</p>
+                      <div className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-2.5 py-0.5">
+                        <span className="text-[10px] font-mono font-bold text-primary tracking-wider">{profile.medical_id}</span>
+                      </div>
+                    </div>
+                  </div>
+                  {/* Right: QR Code */}
+                  <div className="flex flex-col items-center gap-2">
+                    <div className="rounded-xl bg-white p-3 shadow-sm">
+                      <QRCodeSVG
+                        ref={qrRef}
+                        value={`E2CARE:${profile.medical_id}:${form.full_name}`}
+                        size={100}
+                        level="H"
+                        includeMargin={false}
+                      />
+                    </div>
+                    <Button size="sm" variant="outline" className="gap-1.5 text-xs h-7" onClick={downloadQR}>
+                      <Download className="h-3 w-3" /> Download QR
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Profile Form */}
           <Card className="shadow-sm">
@@ -236,6 +303,38 @@ export default function SettingsPage() {
 
         {/* Preferences Tab */}
         <TabsContent value="preferences" className="space-y-4 pt-4">
+          {/* Language Toggle - NEW */}
+          <Card className="shadow-sm">
+            <CardHeader className="pb-2">
+              <CardTitle className="flex items-center gap-2 text-base">
+                🌐 Language / भाषा
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-xs text-muted-foreground mb-3">Choose your preferred language for the app.</p>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setLanguage("en")}
+                  className={`flex-1 rounded-xl border py-2.5 text-sm font-medium transition-all ${language === "en"
+                      ? "border-primary bg-primary text-primary-foreground shadow-sm"
+                      : "border-border bg-background text-foreground hover:bg-accent"
+                    }`}
+                >
+                  🇬🇧 English
+                </button>
+                <button
+                  onClick={() => setLanguage("hi")}
+                  className={`flex-1 rounded-xl border py-2.5 text-sm font-medium transition-all ${language === "hi"
+                      ? "border-primary bg-primary text-primary-foreground shadow-sm"
+                      : "border-border bg-background text-foreground hover:bg-accent"
+                    }`}
+                >
+                  🇮🇳 हिंदी
+                </button>
+              </div>
+            </CardContent>
+          </Card>
+
           <Card className="shadow-sm">
             <CardHeader className="pb-2">
               <CardTitle className="flex items-center gap-2 text-base">

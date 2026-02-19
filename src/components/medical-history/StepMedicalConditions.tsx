@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Trash2, Activity, History } from "lucide-react";
+import { Plus, Trash2, Activity, History, ImagePlus, X } from "lucide-react";
 
 interface Condition {
   name: string;
@@ -39,6 +39,23 @@ const emptyCondition: Condition = {
   severity: "mild", treatment: "", doctor: "", notes: "",
 };
 
+interface Issue {
+  image_preview?: string;
+  image_name?: string;
+  description?: string;
+  started_from?: string;
+  body_part?: string;
+  previous_treatment?: string;
+  treatment_start?: string;
+  treatment_end?: string;
+  treating_doctor?: string;
+}
+
+const emptyIssue: Issue = {
+  description: "", started_from: "", body_part: "",
+  previous_treatment: "", treating_doctor: "",
+};
+
 const statusColors: Record<string, string> = {
   active: "bg-red-100 text-red-700 border-red-200",
   chronic: "bg-amber-100 text-amber-700 border-amber-200",
@@ -53,6 +70,59 @@ const statusIcons: Record<string, string> = {
 export default function StepMedicalConditions({ data, onChange }: StepMedicalConditionsProps) {
   const conditions: Condition[] = data.conditions || [];
   const [quickAdd, setQuickAdd] = useState("");
+
+  // Initialize issues from new array OR fallback to old single object (migration)
+  const existingIssues: Issue[] = data.current_issues ||
+    (data.current_issue && Object.keys(data.current_issue).length > 0 ? [data.current_issue] : []);
+
+  // If no issues exist, show at least one empty form
+  const issues: Issue[] = existingIssues.length > 0 ? existingIssues : [emptyIssue];
+
+  const updateIssues = (newIssues: Issue[]) => {
+    onChange({
+      ...data,
+      current_issues: newIssues,
+      // Keep legacy field synced with the first issue for backward compatibility if needed
+      current_issue: newIssues[0] || {}
+    });
+  };
+
+  const addIssue = () => {
+    updateIssues([...issues, { ...emptyIssue }]);
+  };
+
+  const removeIssue = (index: number) => {
+    const newIssues = issues.filter((_, i) => i !== index);
+    updateIssues(newIssues.length ? newIssues : [{ ...emptyIssue }]);
+  };
+
+  const updateIssue = (index: number, field: keyof Issue, value: string) => {
+    const newIssues = [...issues];
+    newIssues[index] = { ...newIssues[index], [field]: value };
+    updateIssues(newIssues);
+  };
+
+  const handleIssueImageSelect = (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const newIssues = [...issues];
+      newIssues[index] = {
+        ...newIssues[index],
+        image_preview: reader.result as string,
+        image_name: file.name
+      };
+      updateIssues(newIssues);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const removeIssueImage = (index: number) => {
+    const newIssues = [...issues];
+    newIssues[index] = { ...newIssues[index], image_preview: "", image_name: "" };
+    updateIssues(newIssues);
+  };
 
   const addCondition = (name: string = "") => {
     onChange({ ...data, conditions: [...conditions, { ...emptyCondition, name }] });
@@ -77,6 +147,144 @@ export default function StepMedicalConditions({ data, onChange }: StepMedicalCon
       <p className="text-xs sm:text-sm text-muted-foreground">
         Track your current and past medical conditions. This helps doctors understand your complete health history.
       </p>
+
+      {/* Current Health Issues */}
+      <div className="space-y-4">
+        {issues.map((issue, index) => (
+          <Card key={index} className="shadow-sm border-l-4 border-l-blue-400 relative">
+            <CardContent className="p-3 sm:p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <Label className="block text-sm font-semibold">
+                  📸 Current Health Issue / Complaint {issues.length > 1 ? `#${index + 1}` : ""}
+                </Label>
+                {issues.length > 1 && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6 text-destructive -mr-2"
+                    onClick={() => removeIssue(index)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
+
+              <p className="text-xs text-muted-foreground">Describe your current health problem and upload a photo if relevant (e.g. skin rash, wound, swelling).</p>
+
+              {/* Image upload */}
+              <div>
+                <input
+                  id={`file-upload-${index}`}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => handleIssueImageSelect(index, e)}
+                />
+                {issue.image_preview ? (
+                  <div className="relative inline-block">
+                    <img src={issue.image_preview} alt="Issue" className="h-32 w-auto rounded-xl object-cover border border-border" />
+                    <button
+                      type="button"
+                      onClick={() => removeIssueImage(index)}
+                      className="absolute -top-2 -right-2 flex h-6 w-6 items-center justify-center rounded-full bg-destructive text-white shadow"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => document.getElementById(`file-upload-${index}`)?.click()}
+                    className="flex items-center gap-2 rounded-xl border-2 border-dashed border-border px-4 py-3 text-xs text-muted-foreground hover:border-primary/50 hover:bg-accent/30 transition-colors"
+                  >
+                    <ImagePlus className="h-4 w-4" />
+                    Upload photo of the issue (optional)
+                  </button>
+                )}
+              </div>
+
+              <div className="grid gap-3 grid-cols-1 sm:grid-cols-2">
+                <div className="space-y-1 sm:col-span-2">
+                  <Label className="text-xs">Describe the Issue</Label>
+                  <Textarea
+                    placeholder="What is the problem? Where does it hurt? Since when?"
+                    value={issue.description || ""}
+                    onChange={(e) => updateIssue(index, "description", e.target.value)}
+                    rows={2}
+                    className="text-sm"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Issue Started From</Label>
+                  <Input
+                    className="h-10 text-sm"
+                    type="date"
+                    value={issue.started_from || ""}
+                    onChange={(e) => updateIssue(index, "started_from", e.target.value)}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Body Part / Area</Label>
+                  <Input
+                    className="h-10 text-sm"
+                    placeholder="e.g. Left knee, Back, Chest"
+                    value={issue.body_part || ""}
+                    onChange={(e) => updateIssue(index, "body_part", e.target.value)}
+                  />
+                </div>
+                <div className="space-y-1 sm:col-span-2">
+                  <Label className="text-xs">Previous Treatment Done for This Issue</Label>
+                  <Textarea
+                    placeholder="What treatment did you take before? Medicines, therapy, surgery?"
+                    value={issue.previous_treatment || ""}
+                    onChange={(e) => updateIssue(index, "previous_treatment", e.target.value)}
+                    rows={2}
+                    className="text-sm"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Treatment Start Date</Label>
+                  <Input
+                    className="h-10 text-sm"
+                    type="date"
+                    value={issue.treatment_start || ""}
+                    onChange={(e) => updateIssue(index, "treatment_start", e.target.value)}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Treatment End Date</Label>
+                  <Input
+                    className="h-10 text-sm"
+                    type="date"
+                    value={issue.treatment_end || ""}
+                    onChange={(e) => updateIssue(index, "treatment_end", e.target.value)}
+                  />
+                </div>
+                <div className="space-y-1 sm:col-span-2">
+                  <Label className="text-xs">Doctor / Hospital Treated At</Label>
+                  <Input
+                    className="h-10 text-sm"
+                    placeholder="Dr. name or hospital name"
+                    value={issue.treating_doctor || ""}
+                    onChange={(e) => updateIssue(index, "treating_doctor", e.target.value)}
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={addIssue}
+          className="w-full sm:w-auto mt-2"
+        >
+          <Plus className="h-3 w-3 mr-2" /> Add Another Health Issue
+        </Button>
+      </div>
 
       {/* Quick add from common conditions */}
       <div>
