@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronLeft, ChevronRight, Save, Download } from "lucide-react";
+import { ChevronLeft, ChevronRight, Save, Download, FlaskConical, ClipboardList } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useMedicalHistory } from "@/hooks/useMedicalHistory";
@@ -19,6 +19,8 @@ import StepAllergies from "@/components/medical-history/StepAllergies";
 import StepBodySystems from "@/components/medical-history/StepBodySystems";
 import StepLifestyle from "@/components/medical-history/StepLifestyle";
 import CompletionCelebration from "@/components/medical-history/CompletionCelebration";
+import FiveElementDiagnostic from "@/components/medical-history/FiveElementDiagnostic";
+import FiveElementQuestionnaire from "@/components/medical-history/FiveElementQuestionnaire";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { HearOutButton } from "@/components/ui/HearOutButton";
 
@@ -46,6 +48,7 @@ export default function MedicalHistory() {
   const [patientName, setPatientName] = useState<string>("");
   const [hasInitialized, setHasInitialized] = useState(false);
   const [showCelebration, setShowCelebration] = useState(false);
+  const [activeTab, setActiveTab] = useState<"history" | "analysis" | "assessment">("history");
 
   useEffect(() => {
     if (!isLoading && history && !hasInitialized) {
@@ -162,21 +165,40 @@ export default function MedicalHistory() {
           </Button>
         </div>
 
-        {/* Mobile nav on top — hidden on desktop (sidebar shows instead) */}
-        <div className="md:hidden">
-          <StepNavigation
-            steps={STEPS.map(s => ({ ...s, label: t.history[s.key as keyof typeof t.history] as string }))}
-            currentStep={currentStep}
-            onStepChange={setCurrentStep}
-            filledSteps={localData}
-            completionPercent={completionPercent}
-          />
+        {/* Tab switcher */}
+        <div className="flex gap-1.5 overflow-x-auto scrollbar-hide pb-0.5">
+          <button
+            onClick={() => setActiveTab("history")}
+            className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-medium transition-colors ${activeTab === "history"
+                ? "bg-primary text-primary-foreground shadow-sm"
+                : "bg-muted text-muted-foreground hover:bg-accent"
+              }`}
+          >
+            📋 {t.history.title}
+          </button>
+          <button
+            onClick={() => setActiveTab("assessment")}
+            className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-medium transition-colors ${activeTab === "assessment"
+                ? "bg-emerald-600 text-white shadow-sm"
+                : "bg-muted text-muted-foreground hover:bg-accent"
+              }`}
+          >
+            <ClipboardList className="h-3.5 w-3.5" /> Assessment
+          </button>
+          <button
+            onClick={() => setActiveTab("analysis")}
+            className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-medium transition-colors ${activeTab === "analysis"
+                ? "bg-indigo-600 text-white shadow-sm"
+                : "bg-muted text-muted-foreground hover:bg-accent"
+              }`}
+          >
+            <FlaskConical className="h-3.5 w-3.5" /> 五行 Analysis
+          </button>
         </div>
 
-        {/* Desktop: sidebar + content layout */}
-        <div className="flex flex-col md:flex-row gap-6">
-          {/* Desktop sidebar stepper */}
-          <div className="hidden md:block md:w-56 lg:w-64 flex-shrink-0">
+        {/* Mobile nav on top — hidden on desktop (sidebar shows instead) */}
+        {activeTab === "history" && (
+          <div className="md:hidden">
             <StepNavigation
               steps={STEPS.map(s => ({ ...s, label: t.history[s.key as keyof typeof t.history] as string }))}
               currentStep={currentStep}
@@ -185,74 +207,104 @@ export default function MedicalHistory() {
               completionPercent={completionPercent}
             />
           </div>
+        )}
 
-          {/* Step content */}
-          <div className="flex-1 min-w-0 space-y-3 sm:space-y-4">
-            <Card className="shadow-sm border-border/60">
-              <CardContent className="p-3.5 sm:p-5 md:p-6">
-                {/* Step header */}
-                <div className="mb-3 sm:mb-4 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xl sm:text-2xl">{STEPS[currentStep].icon}</span>
-                    <div>
-                      <h3 className="font-display text-base sm:text-lg font-semibold text-foreground leading-tight">
-                        {t.history[stepKey as keyof typeof t.history] as string}
-                      </h3>
-                      <p className="text-[11px] sm:text-xs text-muted-foreground">
-                        {t.history.stepOf.replace("{current}", (currentStep + 1).toString()).replace("{total}", STEPS.length.toString())}
-                      </p>
+        {/* Five Element Assessment (Questionnaire) tab */}
+        {activeTab === "assessment" && (
+          <div className="max-w-2xl">
+            <FiveElementQuestionnaire />
+          </div>
+        )}
+
+        {/* Five Element Analysis tab (auto from medical history) */}
+        {activeTab === "analysis" && (
+          <div className="max-w-2xl">
+            <FiveElementDiagnostic history={localData} />
+          </div>
+        )}
+
+        {/* Medical History form tab */}
+        {activeTab === "history" && (
+          <div className="flex flex-col md:flex-row gap-6">
+            {/* Desktop sidebar stepper */}
+            <div className="hidden md:block md:w-56 lg:w-64 flex-shrink-0">
+              <StepNavigation
+                steps={STEPS.map(s => ({ ...s, label: t.history[s.key as keyof typeof t.history] as string }))}
+                currentStep={currentStep}
+                onStepChange={setCurrentStep}
+                filledSteps={localData}
+                completionPercent={completionPercent}
+              />
+            </div>
+
+            {/* Step content */}
+            <div className="flex-1 min-w-0 space-y-3 sm:space-y-4">
+              <Card className="shadow-sm border-border/60">
+                <CardContent className="p-3.5 sm:p-5 md:p-6">
+                  {/* Step header */}
+                  <div className="mb-3 sm:mb-4 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xl sm:text-2xl">{STEPS[currentStep].icon}</span>
+                      <div>
+                        <h3 className="font-display text-base sm:text-lg font-semibold text-foreground leading-tight">
+                          {t.history[stepKey as keyof typeof t.history] as string}
+                        </h3>
+                        <p className="text-[11px] sm:text-xs text-muted-foreground">
+                          {t.history.stepOf.replace("{current}", (currentStep + 1).toString()).replace("{total}", STEPS.length.toString())}
+                        </p>
+                      </div>
                     </div>
+                    <HearOutButton text={t.history[stepKey as keyof typeof t.history] as string} />
                   </div>
-                  <HearOutButton text={t.history[stepKey as keyof typeof t.history] as string} />
-                </div>
 
-                <AnimatePresence mode="wait">
-                  <motion.div
-                    key={stepKey}
-                    initial={{ opacity: 0, x: 16 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -16 }}
-                    transition={{ duration: 0.18 }}
-                  >
-                    {renderStep()}
-                  </motion.div>
-                </AnimatePresence>
-              </CardContent>
-            </Card>
+                  <AnimatePresence mode="wait">
+                    <motion.div
+                      key={stepKey}
+                      initial={{ opacity: 0, x: 16 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -16 }}
+                      transition={{ duration: 0.18 }}
+                    >
+                      {renderStep()}
+                    </motion.div>
+                  </AnimatePresence>
+                </CardContent>
+              </Card>
 
-            {/* Navigation buttons — extra bottom margin on mobile to clear bottom nav */}
-            <div className="flex items-center justify-between pb-2 sm:pb-0">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handlePrev}
-                disabled={currentStep === 0}
-                className="gap-1 text-xs sm:text-sm"
-              >
-                <ChevronLeft className="h-4 w-4" /> {t.common.back}
-              </Button>
+              {/* Navigation buttons */}
+              <div className="flex items-center justify-between pb-2 sm:pb-0">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handlePrev}
+                  disabled={currentStep === 0}
+                  className="gap-1 text-xs sm:text-sm"
+                >
+                  <ChevronLeft className="h-4 w-4" /> {t.common.back}
+                </Button>
 
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleSave}
-                disabled={saveStep.isPending}
-                className="gap-1 text-xs sm:text-sm"
-              >
-                <Save className="h-4 w-4" /> {t.common.save}
-              </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleSave}
+                  disabled={saveStep.isPending}
+                  className="gap-1 text-xs sm:text-sm"
+                >
+                  <Save className="h-4 w-4" /> {t.common.save}
+                </Button>
 
-              <Button
-                size="sm"
-                onClick={handleNext}
-                disabled={saveStep.isPending}
-                className="gap-1 text-xs sm:text-sm"
-              >
-                {currentStep === STEPS.length - 1 ? t.history.done : t.common.next} <ChevronRight className="h-4 w-4" />
-              </Button>
+                <Button
+                  size="sm"
+                  onClick={handleNext}
+                  disabled={saveStep.isPending}
+                  className="gap-1 text-xs sm:text-sm"
+                >
+                  {currentStep === STEPS.length - 1 ? t.history.done : t.common.next} <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
           </div>
-        </div>
+        )}
       </motion.div >
     </>
   );
