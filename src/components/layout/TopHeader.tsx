@@ -4,17 +4,20 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import NotificationBell from "@/components/notifications/NotificationBell";
 import { useProfilePhoto } from "@/hooks/useProfilePhoto";
-
-function getGreeting(): string {
-  const hour = new Date().getHours();
-  if (hour < 12) return "Good Morning";
-  if (hour < 17) return "Good Afternoon";
-  return "Good Evening";
-}
+import { useLanguage } from "@/contexts/LanguageContext";
 
 export default function TopHeader() {
   const { photoUrl, fullName, initials } = useProfilePhoto();
-  const firstName = fullName?.split(" ")[0] || "there";
+  const { t } = useLanguage();
+
+  const getGreeting = (): string => {
+    const hour = new Date().getHours();
+    if (hour < 12) return t.dashboard.goodMorning;
+    if (hour < 17) return t.dashboard.goodAfternoon;
+    return t.dashboard.goodEvening;
+  };
+
+  const firstName = fullName?.split(" ")[0] || t.dashboard.there;
 
   return (
     <header className="flex h-16 items-center justify-between border-b border-border bg-card px-4 lg:px-6">
@@ -24,7 +27,7 @@ export default function TopHeader() {
           <h1 className="font-display text-lg font-semibold text-foreground">
             {getGreeting()}, {firstName} 👋
           </h1>
-          <p className="text-xs text-muted-foreground">How are you feeling today?</p>
+          <p className="text-xs text-muted-foreground">{t.dashboard.howAreYouFeeling}</p>
         </div>
       </div>
 
@@ -33,7 +36,7 @@ export default function TopHeader() {
           <div className="relative">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
-              placeholder="Search..."
+              placeholder={`${t.common.search}...`}
               className="w-64 pl-10 bg-muted/50 border-none"
             />
           </div>

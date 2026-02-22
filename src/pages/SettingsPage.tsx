@@ -16,13 +16,14 @@ import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { QRCodeSVG } from "qrcode.react";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { HearOutButton } from "@/components/ui/HearOutButton";
 
 export default function SettingsPage() {
   const { user, signOut } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const qrRef = useRef<SVGSVGElement>(null);
-  const { language, setLanguage } = useLanguage();
+  const { language, setLanguage, t } = useLanguage();
 
   const { data: profile, isLoading } = useQuery({
     queryKey: ["profile_settings", user?.id],
@@ -83,7 +84,7 @@ export default function SettingsPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["profile_settings"] });
-      toast({ title: "Profile Updated", description: "Your profile has been saved." });
+      toast({ title: t.common.save + "!", description: t.history.historySaved.replace("{step}", t.settings.profile) });
     },
     onError: () => {
       toast({ title: "Error", description: "Failed to update profile.", variant: "destructive" });
@@ -148,13 +149,16 @@ export default function SettingsPage() {
 
   return (
     <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
-      <h2 className="font-display text-xl font-bold text-foreground">Settings</h2>
+      <div className="flex items-center justify-between">
+        <h2 className="font-display text-xl font-bold text-foreground">{t.settings.title}</h2>
+        <HearOutButton text={t.settings.title} />
+      </div>
 
       <Tabs defaultValue="profile">
         <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="profile">Profile</TabsTrigger>
-          <TabsTrigger value="preferences">Preferences</TabsTrigger>
-          <TabsTrigger value="security">Security</TabsTrigger>
+          <TabsTrigger value="profile">{t.settings.profile}</TabsTrigger>
+          <TabsTrigger value="preferences">{t.settings.preferences}</TabsTrigger>
+          <TabsTrigger value="security">{t.settings.security}</TabsTrigger>
         </TabsList>
 
         {/* Profile Tab */}
@@ -175,7 +179,7 @@ export default function SettingsPage() {
                 </label>
               </div>
               <div>
-                <h3 className="font-display text-lg font-semibold text-foreground">{form.full_name || "Your Name"}</h3>
+                <h3 className="font-display text-lg font-semibold text-foreground">{form.full_name || t.common.name}</h3>
                 <p className="text-sm text-muted-foreground">{user?.email}</p>
                 {profile?.medical_id && (
                   <p className="mt-0.5 text-xs text-muted-foreground">Medical ID: {profile.medical_id}</p>
@@ -184,13 +188,13 @@ export default function SettingsPage() {
             </CardContent>
           </Card>
 
-          {/* Patient QR Card - NEW */}
+          {/* Patient QR Card */}
           {profile?.medical_id && (
             <Card className="shadow-sm border-primary/20 bg-gradient-to-br from-primary/5 to-primary/10">
               <CardHeader className="pb-2">
                 <CardTitle className="flex items-center gap-2 text-base">
                   <QrCode className="h-4 w-4 text-primary" />
-                  Patient ID Card
+                  {t.settings.patientCard}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -202,8 +206,8 @@ export default function SettingsPage() {
                       <AvatarFallback className="rounded-xl bg-primary/10 text-lg font-bold text-primary">{initials}</AvatarFallback>
                     </Avatar>
                     <div className="space-y-1">
-                      <p className="font-semibold text-foreground">{form.full_name || "Patient Name"}</p>
-                      <p className="text-xs text-muted-foreground">{form.blood_group && `Blood: ${form.blood_group}`}</p>
+                      <p className="font-semibold text-foreground">{form.full_name || t.common.name}</p>
+                      <p className="text-xs text-muted-foreground">{form.blood_group && `${t.settings.bloodGroup}: ${form.blood_group}`}</p>
                       <div className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-2.5 py-0.5">
                         <span className="text-[10px] font-mono font-bold text-primary tracking-wider">{profile.medical_id}</span>
                       </div>
@@ -221,7 +225,7 @@ export default function SettingsPage() {
                       />
                     </div>
                     <Button size="sm" variant="outline" className="gap-1.5 text-xs h-7" onClick={downloadQR}>
-                      <Download className="h-3 w-3" /> Download QR
+                      <Download className="h-3 w-3" /> {t.settings.downloadQR}
                     </Button>
                   </div>
                 </div>
@@ -232,40 +236,43 @@ export default function SettingsPage() {
           {/* Profile Form */}
           <Card className="shadow-sm">
             <CardHeader className="pb-2">
-              <CardTitle className="flex items-center gap-2 text-base">
-                <User className="h-4 w-4 text-primary" />
-                Personal Information
+              <CardTitle className="flex items-center justify-between text-base">
+                <div className="flex items-center gap-2">
+                  <User className="h-4 w-4 text-primary" />
+                  {t.settings.personalInfo}
+                </div>
+                <HearOutButton text={t.settings.personalInfo} />
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
-                  <Label>Full Name</Label>
+                  <Label>{t.settings.fullName}</Label>
                   <Input value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })} />
                 </div>
                 <div>
-                  <Label>Phone</Label>
+                  <Label>{t.settings.phone}</Label>
                   <Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="+91 98765 43210" />
                 </div>
                 <div>
-                  <Label>Date of Birth</Label>
+                  <Label>{t.settings.dateOfBirth}</Label>
                   <Input type="date" value={form.date_of_birth} onChange={(e) => setForm({ ...form, date_of_birth: e.target.value })} />
                 </div>
                 <div>
-                  <Label>Gender</Label>
+                  <Label>{t.settings.gender}</Label>
                   <Select value={form.gender} onValueChange={(v) => setForm({ ...form, gender: v })}>
-                    <SelectTrigger><SelectValue placeholder="Select gender" /></SelectTrigger>
+                    <SelectTrigger><SelectValue placeholder={t.settings.selectGender} /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="male">Male</SelectItem>
                       <SelectItem value="female">Female</SelectItem>
-                      <SelectItem value="other">Other</SelectItem>
+                      <SelectItem value="other">{t.common.other}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div>
-                  <Label>Blood Group</Label>
+                  <Label>{t.settings.bloodGroup}</Label>
                   <Select value={form.blood_group} onValueChange={(v) => setForm({ ...form, blood_group: v })}>
-                    <SelectTrigger><SelectValue placeholder="Select blood group" /></SelectTrigger>
+                    <SelectTrigger><SelectValue placeholder={t.settings.selectBloodGroup} /></SelectTrigger>
                     <SelectContent>
                       {["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"].map((bg) => (
                         <SelectItem key={bg} value={bg}>{bg}</SelectItem>
@@ -274,28 +281,28 @@ export default function SettingsPage() {
                   </Select>
                 </div>
                 <div className="sm:col-span-2">
-                  <Label>Address</Label>
-                  <Input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} placeholder="Your address" />
+                  <Label>{t.settings.address}</Label>
+                  <Input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} placeholder={t.settings.address} />
                 </div>
               </div>
 
               <Separator />
 
-              <h4 className="text-sm font-medium text-foreground">Emergency Contact</h4>
+              <h4 className="text-sm font-medium text-foreground">{t.settings.emergencyContact}</h4>
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
-                  <Label>Contact Name</Label>
+                  <Label>{t.settings.contactName}</Label>
                   <Input value={form.emergency_contact_name} onChange={(e) => setForm({ ...form, emergency_contact_name: e.target.value })} />
                 </div>
                 <div>
-                  <Label>Contact Phone</Label>
+                  <Label>{t.settings.contactPhone}</Label>
                   <Input value={form.emergency_contact_phone} onChange={(e) => setForm({ ...form, emergency_contact_phone: e.target.value })} />
                 </div>
               </div>
 
               <Button className="w-full" onClick={() => updateProfile.mutate(form)} disabled={updateProfile.isPending}>
                 {updateProfile.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-                Save Changes
+                {t.settings.saveChanges}
               </Button>
             </CardContent>
           </Card>
@@ -303,21 +310,21 @@ export default function SettingsPage() {
 
         {/* Preferences Tab */}
         <TabsContent value="preferences" className="space-y-4 pt-4">
-          {/* Language Toggle - NEW */}
+          {/* Language Toggle */}
           <Card className="shadow-sm">
             <CardHeader className="pb-2">
               <CardTitle className="flex items-center gap-2 text-base">
-                🌐 Language / भाषा
+                🌐 {t.settings.language}
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-xs text-muted-foreground mb-3">Choose your preferred language for the app.</p>
+              <p className="text-xs text-muted-foreground mb-3">{t.settings.languageDesc}</p>
               <div className="flex gap-2">
                 <button
                   onClick={() => setLanguage("en")}
                   className={`flex-1 rounded-xl border py-2.5 text-sm font-medium transition-all ${language === "en"
-                      ? "border-primary bg-primary text-primary-foreground shadow-sm"
-                      : "border-border bg-background text-foreground hover:bg-accent"
+                    ? "border-primary bg-primary text-primary-foreground shadow-sm"
+                    : "border-border bg-background text-foreground hover:bg-accent"
                     }`}
                 >
                   🇬🇧 English
@@ -325,8 +332,8 @@ export default function SettingsPage() {
                 <button
                   onClick={() => setLanguage("hi")}
                   className={`flex-1 rounded-xl border py-2.5 text-sm font-medium transition-all ${language === "hi"
-                      ? "border-primary bg-primary text-primary-foreground shadow-sm"
-                      : "border-border bg-background text-foreground hover:bg-accent"
+                    ? "border-primary bg-primary text-primary-foreground shadow-sm"
+                    : "border-border bg-background text-foreground hover:bg-accent"
                     }`}
                 >
                   🇮🇳 हिंदी
@@ -337,17 +344,20 @@ export default function SettingsPage() {
 
           <Card className="shadow-sm">
             <CardHeader className="pb-2">
-              <CardTitle className="flex items-center gap-2 text-base">
-                <Bell className="h-4 w-4 text-primary" />
-                Notifications
+              <CardTitle className="flex items-center justify-between text-base">
+                <div className="flex items-center gap-2">
+                  <Bell className="h-4 w-4 text-primary" />
+                  {t.settings.notifications}
+                </div>
+                <HearOutButton text={t.settings.notifications} />
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               {[
-                { label: "Appointment Reminders", desc: "Get notified before appointments" },
-                { label: "Medicine Reminders", desc: "Daily medication alerts" },
-                { label: "Report Ready", desc: "When AI finishes analyzing reports" },
-                { label: "New Prescriptions", desc: "When doctor creates a prescription" },
+                { label: t.settings.appointmentReminders, desc: t.settings.notificationDesc },
+                { label: t.settings.medicationReminders, desc: t.settings.notificationDesc },
+                { label: t.settings.reportReady, desc: t.settings.notificationDesc },
+                { label: t.settings.newPrescriptions, desc: t.settings.notificationDesc },
               ].map((item) => (
                 <div key={item.label} className="flex items-center justify-between">
                   <div>
@@ -365,25 +375,28 @@ export default function SettingsPage() {
         <TabsContent value="security" className="space-y-4 pt-4">
           <Card className="shadow-sm">
             <CardHeader className="pb-2">
-              <CardTitle className="flex items-center gap-2 text-base">
-                <Shield className="h-4 w-4 text-primary" />
-                Account Security
+              <CardTitle className="flex items-center justify-between text-base">
+                <div className="flex items-center gap-2">
+                  <Shield className="h-4 w-4 text-primary" />
+                  {t.settings.accountSecurity}
+                </div>
+                <HearOutButton text={t.settings.accountSecurity} />
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <p className="text-sm font-medium text-foreground">Email</p>
+                <p className="text-sm font-medium text-foreground">{t.settings.email}</p>
                 <p className="text-sm text-muted-foreground">{user?.email}</p>
               </div>
               <div>
-                <p className="text-sm font-medium text-foreground">Emergency PIN</p>
+                <p className="text-sm font-medium text-foreground">{t.settings.emergencyPin}</p>
                 <p className="text-sm text-muted-foreground">
-                  {profile?.pin_code ? `${profile.pin_code.slice(0, 2)}****` : "Not set"}
+                  {profile?.pin_code ? `${profile.pin_code.slice(0, 2)}****` : t.settings.notSet}
                 </p>
               </div>
               <Separator />
               <Button variant="destructive" className="w-full" onClick={signOut}>
-                Sign Out
+                {t.settings.signOut}
               </Button>
             </CardContent>
           </Card>

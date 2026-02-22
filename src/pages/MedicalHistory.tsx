@@ -19,6 +19,8 @@ import StepAllergies from "@/components/medical-history/StepAllergies";
 import StepBodySystems from "@/components/medical-history/StepBodySystems";
 import StepLifestyle from "@/components/medical-history/StepLifestyle";
 import CompletionCelebration from "@/components/medical-history/CompletionCelebration";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { HearOutButton } from "@/components/ui/HearOutButton";
 
 const STEPS = [
   { key: "birth_history", label: "Birth History", icon: "🍼" },
@@ -36,6 +38,7 @@ export default function MedicalHistory() {
   const { history, isLoading, saveStep, completionPercent } = useMedicalHistory();
   const { user } = useAuth();
   const { toast } = useToast();
+  const { t } = useLanguage();
 
   const [currentStep, setCurrentStep] = useState(0);
   const [localData, setLocalData] = useState<Record<string, Record<string, any>>>({});
@@ -81,7 +84,8 @@ export default function MedicalHistory() {
       current_step: currentStep + 1,
       is_complete: currentStep === STEPS.length - 1,
     });
-    toast({ title: "Saved!", description: `${STEPS[currentStep].label} saved successfully.` });
+    const stepLabel = t.history[stepKey as keyof typeof t.history];
+    toast({ title: t.common.save + "!", description: t.history.historySaved.replace("{step}", stepLabel as string) });
   };
 
   const handleNext = async () => {
@@ -92,7 +96,8 @@ export default function MedicalHistory() {
       current_step: Math.min(nextStep + 1, STEPS.length),
       is_complete: isLastStep,
     });
-    toast({ title: "Saved!", description: `${STEPS[currentStep].label} saved successfully.` });
+    const stepLabel = t.history[stepKey as keyof typeof t.history];
+    toast({ title: t.common.save + "!", description: t.history.historySaved.replace("{step}", stepLabel as string) });
     if (isLastStep) {
       setShowCelebration(true);
     } else {
@@ -145,7 +150,7 @@ export default function MedicalHistory() {
       <CompletionCelebration show={showCelebration} onClose={handleCloseCelebration} />
       <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="space-y-3 sm:space-y-4 overflow-x-hidden">
         <div className="flex items-center justify-between">
-          <h2 className="font-display text-lg sm:text-xl font-bold text-foreground">Medical History</h2>
+          <h2 className="font-display text-lg sm:text-xl font-bold text-foreground">{t.history.title}</h2>
           <Button
             variant="outline"
             size="sm"
@@ -153,14 +158,14 @@ export default function MedicalHistory() {
             onClick={async () => await generateMedicalHistoryPdf(history as any, patientName)}
             disabled={completionPercent === 0}
           >
-            <Download className="h-3.5 w-3.5" /> Download PDF
+            <Download className="h-3.5 w-3.5" /> {t.common.download} PDF
           </Button>
         </div>
 
-        {/* Mobile nav on top */}
+        {/* Mobile nav on top — hidden on desktop (sidebar shows instead) */}
         <div className="md:hidden">
           <StepNavigation
-            steps={STEPS}
+            steps={STEPS.map(s => ({ ...s, label: t.history[s.key as keyof typeof t.history] as string }))}
             currentStep={currentStep}
             onStepChange={setCurrentStep}
             filledSteps={localData}
@@ -173,7 +178,7 @@ export default function MedicalHistory() {
           {/* Desktop sidebar stepper */}
           <div className="hidden md:block md:w-56 lg:w-64 flex-shrink-0">
             <StepNavigation
-              steps={STEPS}
+              steps={STEPS.map(s => ({ ...s, label: t.history[s.key as keyof typeof t.history] as string }))}
               currentStep={currentStep}
               onStepChange={setCurrentStep}
               filledSteps={localData}
@@ -186,16 +191,19 @@ export default function MedicalHistory() {
             <Card className="shadow-sm border-border/60">
               <CardContent className="p-3.5 sm:p-5 md:p-6">
                 {/* Step header */}
-                <div className="mb-3 sm:mb-4 flex items-center gap-2">
-                  <span className="text-xl sm:text-2xl">{STEPS[currentStep].icon}</span>
-                  <div>
-                    <h3 className="font-display text-base sm:text-lg font-semibold text-foreground leading-tight">
-                      {STEPS[currentStep].label}
-                    </h3>
-                    <p className="text-[11px] sm:text-xs text-muted-foreground">
-                      Step {currentStep + 1} of {STEPS.length}
-                    </p>
+                <div className="mb-3 sm:mb-4 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xl sm:text-2xl">{STEPS[currentStep].icon}</span>
+                    <div>
+                      <h3 className="font-display text-base sm:text-lg font-semibold text-foreground leading-tight">
+                        {t.history[stepKey as keyof typeof t.history] as string}
+                      </h3>
+                      <p className="text-[11px] sm:text-xs text-muted-foreground">
+                        {t.history.stepOf.replace("{current}", (currentStep + 1).toString()).replace("{total}", STEPS.length.toString())}
+                      </p>
+                    </div>
                   </div>
+                  <HearOutButton text={t.history[stepKey as keyof typeof t.history] as string} />
                 </div>
 
                 <AnimatePresence mode="wait">
@@ -221,7 +229,7 @@ export default function MedicalHistory() {
                 disabled={currentStep === 0}
                 className="gap-1 text-xs sm:text-sm"
               >
-                <ChevronLeft className="h-4 w-4" /> Back
+                <ChevronLeft className="h-4 w-4" /> {t.common.back}
               </Button>
 
               <Button
@@ -231,7 +239,7 @@ export default function MedicalHistory() {
                 disabled={saveStep.isPending}
                 className="gap-1 text-xs sm:text-sm"
               >
-                <Save className="h-4 w-4" /> Save
+                <Save className="h-4 w-4" /> {t.common.save}
               </Button>
 
               <Button
@@ -240,12 +248,12 @@ export default function MedicalHistory() {
                 disabled={saveStep.isPending}
                 className="gap-1 text-xs sm:text-sm"
               >
-                {currentStep === STEPS.length - 1 ? "Done" : "Next"} <ChevronRight className="h-4 w-4" />
+                {currentStep === STEPS.length - 1 ? t.history.done : t.common.next} <ChevronRight className="h-4 w-4" />
               </Button>
             </div>
           </div>
         </div>
-      </motion.div>
+      </motion.div >
     </>
   );
 }

@@ -32,31 +32,33 @@ import {
 } from "@/components/ui/sidebar";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
-
-const mainNavItems = [
-  { title: "Dashboard", icon: LayoutDashboard, path: "/dashboard" },
-  { title: "Medical History", icon: ClipboardList, path: "/medical-history" },
-  { title: "Reports & Records", icon: FileText, path: "/records" },
-  { title: "Appointments", icon: Calendar, path: "/appointments" },
-  { title: "Messages", icon: MessageSquare, path: "/messages" },
-  { title: "AI Assistant", icon: Bot, path: "/chat" },
-];
-
-const moreNavItems = [
-  { title: "Emergency", icon: AlertTriangle, path: "/emergency" },
-  { title: "Conditions", icon: Activity, path: "/conditions" },
-  { title: "Timeline", icon: Clock, path: "/timeline" },
-  { title: "Wallet", icon: Wallet, path: "/wallet" },
-  { title: "Referrals", icon: Gift, path: "/referrals" },
-  { title: "Register as Doctor", icon: Stethoscope, path: "/doctor-register" },
-  { title: "Settings", icon: Settings, path: "/settings" },
-];
+import { useLanguage } from "@/contexts/LanguageContext";
 
 export default function AppSidebar() {
   const location = useLocation();
   const navigate = useNavigate();
   const { signOut } = useAuth();
   const { photoUrl, fullName, initials } = useProfilePhoto();
+  const { t } = useLanguage();
+
+  const mainNavItems = [
+    { title: t.nav.dashboard, icon: LayoutDashboard, path: "/dashboard" },
+    { title: t.nav.history, icon: ClipboardList, path: "/medical-history" },
+    { title: t.nav.records, icon: FileText, path: "/records" },
+    { title: t.nav.appointments, icon: Calendar, path: "/appointments" },
+    { title: t.nav.messages, icon: MessageSquare, path: "/messages" },
+    { title: t.nav.aiChat, icon: Bot, path: "/chat" },
+  ];
+
+  const moreNavItems = [
+    { title: t.nav.emergency, icon: AlertTriangle, path: "/emergency" },
+    { title: t.nav.conditions, icon: Activity, path: "/conditions" },
+    { title: t.nav.timeline, icon: Clock, path: "/timeline" },
+    { title: t.nav.wallet, icon: Wallet, path: "/wallet" },
+    { title: t.nav.referrals, icon: Gift, path: "/referrals" },
+    { title: t.nav.doctorRegister, icon: Stethoscope, path: "/doctor-register" },
+    { title: t.nav.settings, icon: Settings, path: "/settings" },
+  ];
 
   return (
     <Sidebar>
@@ -72,7 +74,7 @@ export default function AppSidebar() {
 
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Main</SidebarGroupLabel>
+          <SidebarGroupLabel>{t.nav.main}</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {mainNavItems.map((item) => (
@@ -92,7 +94,7 @@ export default function AppSidebar() {
         </SidebarGroup>
 
         <SidebarGroup>
-          <SidebarGroupLabel>More</SidebarGroupLabel>
+          <SidebarGroupLabel>{t.nav.more}</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {moreNavItems.map((item) => (
@@ -122,13 +124,13 @@ export default function AppSidebar() {
           </Avatar>
           <div className="flex-1 truncate">
             <p className="truncate text-sm font-medium text-sidebar-foreground">
-              {fullName || "Patient"}
+              {fullName || t.common.patient}
             </p>
           </div>
           <button
             onClick={signOut}
             className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
-            title="Sign out"
+            title={t.settings.signOut}
           >
             <LogOut className="h-4 w-4" />
           </button>

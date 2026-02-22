@@ -5,18 +5,22 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { useMedicalHistory } from "@/hooks/useMedicalHistory";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 export default function ProfileCompletionMeter() {
   const navigate = useNavigate();
   const { completionPercent, history } = useMedicalHistory();
+  const { t } = useLanguage();
 
-  if (history.is_complete) return null;
+  if (history?.is_complete) return null;
 
   const getColor = () => {
     if (completionPercent >= 80) return "text-success";
     if (completionPercent >= 40) return "text-warning";
     return "text-primary";
   };
+
+  const currentStep = Math.round(completionPercent / (100 / 7));
 
   return (
     <Card className="shadow-sm border-primary/20">
@@ -27,7 +31,7 @@ export default function ProfileCompletionMeter() {
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between mb-1">
-              <p className="text-sm font-medium text-foreground">Complete Your Medical History</p>
+              <p className="text-sm font-medium text-foreground">{t.profileCompletion.title}</p>
               <span className={`text-xs font-bold ${getColor()}`}>{completionPercent}%</span>
             </div>
             <motion.div
@@ -40,8 +44,8 @@ export default function ProfileCompletionMeter() {
             </motion.div>
             <p className="mt-1 text-xs text-muted-foreground">
               {completionPercent === 0
-                ? "Start your 7-step health history for personalized care"
-                : `${Math.round(completionPercent / (100 / 7))} of 7 steps completed`}
+                ? t.profileCompletion.startHistory
+                : t.profileCompletion.stepsCompleted.replace("{completed}", currentStep.toString()).replace("{total}", "7")}
             </p>
           </div>
           <Button

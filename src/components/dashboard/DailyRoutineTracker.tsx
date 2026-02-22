@@ -3,6 +3,7 @@ import { Minus, Plus, Check, X, Footprints, Moon, Dumbbell, GlassWater } from "l
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import type { DailyRoutine } from "@/hooks/useDailyRoutine";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface DailyRoutineTrackerProps {
   routine: DailyRoutine;
@@ -10,6 +11,7 @@ interface DailyRoutineTrackerProps {
 }
 
 export default function DailyRoutineTracker({ routine, onUpdate }: DailyRoutineTrackerProps) {
+  const { t } = useLanguage();
   const handleUpdate = (key: keyof DailyRoutine, value: number) => {
     onUpdate({ [key]: value });
   };
@@ -25,7 +27,7 @@ export default function DailyRoutineTracker({ routine, onUpdate }: DailyRoutineT
       <Card className="overflow-hidden border-none bg-blue-50/50 shadow-sm dark:bg-blue-950/20">
         <CardContent className="flex h-full flex-col items-center justify-center p-6 text-center">
           <div className="mb-4 flex items-center gap-2 text-lg font-semibold text-blue-900 dark:text-blue-100">
-            <GlassWater className="h-5 w-5" /> Hydration
+            <GlassWater className="h-5 w-5" /> {t.routine.hydration}
           </div>
 
           <div className="relative mb-6 h-40 w-20 overflow-hidden rounded-b-xl rounded-t-sm border-4 border-blue-200 bg-white/50 backdrop-blur-sm dark:border-blue-800 dark:bg-black/20">
@@ -40,11 +42,11 @@ export default function DailyRoutineTracker({ routine, onUpdate }: DailyRoutineT
           <div className="mb-2 text-3xl font-bold text-blue-600 dark:text-blue-400">
             {routine.water_glasses}<span className="text-lg text-muted-foreground">/{waterTarget}</span>
           </div>
-          <p className="mb-6 text-sm text-blue-600/60 dark:text-blue-400/60">Glasses</p>
+          <p className="mb-6 text-sm text-blue-600/60 dark:text-blue-400/60">{t.routine.glasses}</p>
 
           {routine.water_glasses < waterTarget && (
             <div className="mb-6 rounded-full bg-amber-100 px-3 py-1 text-xs font-medium text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
-              ⚠️ {waterTarget - routine.water_glasses} glasses behind
+              ⚠️ {waterTarget - routine.water_glasses} {t.routine.behind}
             </div>
           )}
 
@@ -53,7 +55,7 @@ export default function DailyRoutineTracker({ routine, onUpdate }: DailyRoutineT
             className="text-blue-500 hover:text-blue-600 dark:text-blue-400"
             onClick={() => handleUpdate("water_glasses", routine.water_glasses + 1)}
           >
-            Tap to drink (+1 glass)
+            {t.routine.tapToDrink}
           </Button>
         </CardContent>
       </Card>
@@ -68,7 +70,7 @@ export default function DailyRoutineTracker({ routine, onUpdate }: DailyRoutineT
                 <Moon className="h-5 w-5" />
               </div>
               <div>
-                <h4 className="font-semibold text-violet-900 dark:text-violet-100">Sleep</h4>
+                <h4 className="font-semibold text-violet-900 dark:text-violet-100">{t.routine.sleep}</h4>
                 <div className="flex items-center gap-3">
                   <Button
                     size="icon"
@@ -78,7 +80,7 @@ export default function DailyRoutineTracker({ routine, onUpdate }: DailyRoutineT
                   >
                     <Minus className="h-3 w-3" />
                   </Button>
-                  <span className="text-lg font-bold text-violet-700 dark:text-violet-300">{routine.sleep_hours} hrs</span>
+                  <span className="text-lg font-bold text-violet-700 dark:text-violet-300">{routine.sleep_hours} {t.routine.hours}</span>
                   <Button
                     size="icon"
                     variant="outline"
@@ -88,12 +90,12 @@ export default function DailyRoutineTracker({ routine, onUpdate }: DailyRoutineT
                     <Plus className="h-3 w-3" />
                   </Button>
                 </div>
-                <p className="mt-1 text-xs text-muted-foreground">Recommended: 7-9 hours</p>
+                <p className="mt-1 text-xs text-muted-foreground">{t.routine.recommended}: 7-9 {t.routine.hours}</p>
               </div>
             </div>
             {routine.sleep_hours >= sleepTarget && (
               <span className="rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-semibold text-green-700 dark:bg-green-900/30 dark:text-green-400">
-                Good
+                {t.routine.good}
               </span>
             )}
           </CardContent>
@@ -106,7 +108,7 @@ export default function DailyRoutineTracker({ routine, onUpdate }: DailyRoutineT
               <Dumbbell className="h-5 w-5" />
             </div>
             <div className="flex-1">
-              <h4 className="font-semibold text-red-900 dark:text-red-100">Exercise</h4>
+              <h4 className="font-semibold text-red-900 dark:text-red-100">{t.routine.exercise}</h4>
               <div className="mt-2 flex gap-2">
                 <Button
                   size="sm"
@@ -114,7 +116,7 @@ export default function DailyRoutineTracker({ routine, onUpdate }: DailyRoutineT
                   className={routine.exercise_minutes >= exerciseTarget ? "bg-red-500 hover:bg-red-600" : "bg-white hover:bg-red-50 dark:bg-transparent dark:hover:bg-red-900/20"}
                   onClick={() => handleUpdate("exercise_minutes", exerciseTarget)}
                 >
-                  <Check className="mr-1.5 h-3.5 w-3.5" /> Done
+                  <Check className="mr-1.5 h-3.5 w-3.5" /> {t.routine.done}
                 </Button>
                 <Button
                   size="sm"
@@ -122,7 +124,7 @@ export default function DailyRoutineTracker({ routine, onUpdate }: DailyRoutineT
                   className="bg-white hover:bg-red-50 dark:bg-transparent dark:hover:bg-red-900/20"
                   onClick={() => handleUpdate("exercise_minutes", 0)}
                 >
-                  <X className="mr-1.5 h-3.5 w-3.5" /> Skipped
+                  <X className="mr-1.5 h-3.5 w-3.5" /> {t.routine.skipped}
                 </Button>
               </div>
             </div>
@@ -137,7 +139,7 @@ export default function DailyRoutineTracker({ routine, onUpdate }: DailyRoutineT
                 <Footprints className="h-5 w-5" />
               </div>
               <div>
-                <h4 className="font-semibold text-emerald-900 dark:text-emerald-100">Steps</h4>
+                <h4 className="font-semibold text-emerald-900 dark:text-emerald-100">{t.routine.steps}</h4>
                 <div className="flex items-baseline gap-2">
                   <div className="relative">
                     {/* Simple ring placeholder using generic circular logic or SVG */}
@@ -171,13 +173,13 @@ export default function DailyRoutineTracker({ routine, onUpdate }: DailyRoutineT
                   </div>
                   <div>
                     <div className="text-xl font-bold text-emerald-700 dark:text-emerald-300">{routine.steps}</div>
-                    <p className="text-xs text-muted-foreground">{stepsTarget.toLocaleString()} to go</p>
+                    <p className="text-xs text-muted-foreground">{stepsTarget.toLocaleString()} {t.routine.toGo}</p>
                   </div>
                 </div>
               </div>
             </div>
             <div className="text-right text-xs text-muted-foreground">
-              Goal: {stepsTarget.toLocaleString()}
+              {t.routine.goal}: {stepsTarget.toLocaleString()}
             </div>
           </CardContent>
         </Card>

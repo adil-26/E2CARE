@@ -15,6 +15,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import type { Medication } from "@/hooks/useMedications";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { HearOutButton } from "@/components/ui/HearOutButton";
 
 interface MedicineReminderProps {
   medications: Medication[];
@@ -31,6 +33,7 @@ const scheduleIcons: Record<string, typeof Sun> = {
 const scheduleOptions = ["morning", "afternoon", "night"];
 
 export default function MedicineReminder({ medications, onAdd, isAdding }: MedicineReminderProps) {
+  const { t } = useLanguage();
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const [dosage, setDosage] = useState("");
@@ -50,7 +53,7 @@ export default function MedicineReminder({ medications, onAdd, isAdding }: Medic
     onAdd({
       name,
       dosage,
-      frequency: frequency || "as needed",
+      frequency: frequency || t.medications.asNeeded,
       schedule,
       prescribed_by: prescribedBy || null,
       start_date: new Date().toISOString().split("T")[0],
@@ -76,55 +79,58 @@ export default function MedicineReminder({ medications, onAdd, isAdding }: Medic
   return (
     <div>
       <div className="mb-3 flex items-center justify-between">
-        <h3 className="font-display text-base font-semibold text-foreground">
-          <Pill className="mr-1.5 inline h-4 w-4 text-primary" />
-          Medications
-        </h3>
+        <div className="flex items-center gap-1.5">
+          <Pill className="h-4 w-4 text-primary" />
+          <h3 className="font-display text-base font-semibold text-foreground">
+            {t.medications.title}
+          </h3>
+          <HearOutButton text={t.medications.title} />
+        </div>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
             <Button size="sm" variant="outline" className="h-7 gap-1 text-xs">
-              <Plus className="h-3 w-3" /> Add
+              <Plus className="h-3 w-3" /> {t.medications.add}
             </Button>
           </DialogTrigger>
           <DialogContent className="sm:max-w-sm">
             <DialogHeader>
-              <DialogTitle>Add Medication</DialogTitle>
+              <DialogTitle>{t.medications.addMedication}</DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-3">
               <div className="space-y-1.5">
-                <Label>Name</Label>
+                <Label>{t.medications.name}</Label>
                 <Input placeholder="e.g. Metformin" value={name} onChange={(e) => setName(e.target.value)} required />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
-                  <Label>Dosage</Label>
+                  <Label>{t.medications.dosage}</Label>
                   <Input placeholder="e.g. 500mg" value={dosage} onChange={(e) => setDosage(e.target.value)} required />
                 </div>
                 <div className="space-y-1.5">
-                  <Label>Frequency</Label>
+                  <Label>{t.medications.frequency}</Label>
                   <Input placeholder="e.g. twice daily" value={frequency} onChange={(e) => setFrequency(e.target.value)} />
                 </div>
               </div>
               <div className="space-y-1.5">
-                <Label>Schedule</Label>
+                <Label>{t.medications.schedule}</Label>
                 <div className="flex gap-3">
                   {scheduleOptions.map((opt) => (
-                    <label key={opt} className="flex items-center gap-1.5 text-sm capitalize">
+                    <label key={opt} className="flex items-center gap-1.5 text-sm capitalize cursor-pointer">
                       <Checkbox
                         checked={schedule.includes(opt)}
                         onCheckedChange={() => toggleSchedule(opt)}
                       />
-                      {opt}
+                      {t.medications[opt as keyof typeof t.medications]}
                     </label>
                   ))}
                 </div>
               </div>
               <div className="space-y-1.5">
-                <Label>Prescribed By (optional)</Label>
+                <Label>{t.medications.prescribedBy}</Label>
                 <Input placeholder="Dr. Name" value={prescribedBy} onChange={(e) => setPrescribedBy(e.target.value)} />
               </div>
               <Button type="submit" className="w-full" disabled={isAdding}>
-                Save Medication
+                {t.medications.saveMedication}
               </Button>
             </form>
           </DialogContent>
@@ -135,7 +141,7 @@ export default function MedicineReminder({ medications, onAdd, isAdding }: Medic
         <Card className="shadow-sm">
           <CardContent className="flex flex-col items-center justify-center py-8 text-center">
             <Pill className="mb-2 h-8 w-8 text-muted-foreground/40" />
-            <p className="text-sm text-muted-foreground">No medications added yet</p>
+            <p className="text-sm text-muted-foreground">{t.medications.noMeds}</p>
           </CardContent>
         </Card>
       ) : (
@@ -145,7 +151,7 @@ export default function MedicineReminder({ medications, onAdd, isAdding }: Medic
               <CardContent className="p-3">
                 <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-primary">
                   <Clock className="h-3.5 w-3.5" />
-                  Due Now ({currentTime})
+                  {t.medications.dueNow} ({t.medications[currentTime as keyof typeof t.medications]})
                 </p>
                 <div className="space-y-1.5">
                   {dueMeds.map((med) => (
@@ -167,7 +173,9 @@ export default function MedicineReminder({ medications, onAdd, isAdding }: Medic
           <Card className="shadow-sm">
             <CardContent className="divide-y divide-border p-0">
               {medications.map((med, i) => {
-                const ScheduleIcon = scheduleIcons[med.schedule[0]] || Clock;
+                // Find icon for the first schedule item
+                const scheduleKey = med.schedule[0];
+                const ScheduleIcon = scheduleIcons[scheduleKey] || Clock;
                 return (
                   <motion.div
                     key={med.id}
@@ -182,12 +190,12 @@ export default function MedicineReminder({ medications, onAdd, isAdding }: Medic
                     <div className="flex-1 min-w-0">
                       <p className="truncate text-sm font-medium text-foreground">{med.name}</p>
                       <p className="text-xs text-muted-foreground">
-                        {med.dosage} · {med.schedule.join(", ")}
+                        {med.dosage} · {med.schedule.map(s => t.medications[s as keyof typeof t.medications]).join(", ")}
                       </p>
                     </div>
                     {med.prescribed_by && (
                       <span className="text-[10px] text-muted-foreground">
-                        by {med.prescribed_by}
+                        {t.common.doctor}: {med.prescribed_by}
                       </span>
                     )}
                   </motion.div>

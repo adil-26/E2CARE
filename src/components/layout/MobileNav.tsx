@@ -7,18 +7,20 @@ import {
   Bot,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-
-const navItems = [
-  { title: "Home", icon: LayoutDashboard, path: "/dashboard" },
-  { title: "Records", icon: FileText, path: "/records" },
-  { title: "Book", icon: Calendar, path: "/appointments" },
-  { title: "Chat", icon: MessageSquare, path: "/messages" },
-  { title: "AI", icon: Bot, path: "/chat" },
-];
+import { useLanguage } from "@/contexts/LanguageContext";
 
 export default function MobileNav() {
   const location = useLocation();
   const navigate = useNavigate();
+  const { t } = useLanguage();
+
+  const navItems = [
+    { title: t.nav.dashboard, icon: LayoutDashboard, path: "/dashboard" },
+    { title: t.nav.records, icon: FileText, path: "/records" },
+    { title: t.nav.appointments, icon: Calendar, path: "/appointments" },
+    { title: t.nav.messages, icon: MessageSquare, path: "/messages" },
+    { title: t.nav.aiChat, icon: Bot, path: "/chat" },
+  ];
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-card safe-area-bottom lg:hidden">

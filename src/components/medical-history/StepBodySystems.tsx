@@ -10,27 +10,29 @@ import BodySystemUrinary from "./body-systems/BodySystemUrinary";
 import BodySystemSkin from "./body-systems/BodySystemSkin";
 import BodySystemNeuro from "./body-systems/BodySystemNeuro";
 import BodySystemMusculo from "./body-systems/BodySystemMusculo";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface StepBodySystemsProps {
   data: Record<string, any>;
   onChange: (data: Record<string, any>) => void;
 }
 
-const systems = [
-  { key: "ent", label: "ENT & Teeth", icon: "👂" },
-  { key: "eyes", label: "Eyes", icon: "👁️" },
-  { key: "cardio", label: "Heart & Lungs", icon: "❤️" },
-  { key: "gi", label: "Digestive", icon: "🫁" },
-  { key: "urinary", label: "Urinary", icon: "🧪" },
-  { key: "skin", label: "Skin & Hair", icon: "🧴" },
-  { key: "neuro", label: "Nervous System", icon: "🧠" },
-  { key: "musculo", label: "Bones & Joints", icon: "🦴" },
-] as const;
-
 export default function StepBodySystems({ data, onChange }: StepBodySystemsProps) {
+  const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState("ent");
   const scrollRef = useRef<HTMLDivElement>(null);
   const activeRef = useRef<HTMLButtonElement>(null);
+
+  const systems = [
+    { key: "ent", label: t.bodySystems.ent, icon: "👂" },
+    { key: "eyes", label: t.bodySystems.eyes, icon: "👁️" },
+    { key: "cardio", label: t.bodySystems.cardio, icon: "❤️" },
+    { key: "gi", label: t.bodySystems.gi, icon: "🫁" },
+    { key: "urinary", label: t.bodySystems.urinary, icon: "🧪" },
+    { key: "skin", label: t.bodySystems.skin, icon: "🧴" },
+    { key: "neuro", label: t.bodySystems.neuro, icon: "🧠" },
+    { key: "musculo", label: t.bodySystems.musculo, icon: "🦴" },
+  ] as const;
 
   // Auto-scroll active tab into view on mobile
   useEffect(() => {
@@ -49,7 +51,7 @@ export default function StepBodySystems({ data, onChange }: StepBodySystemsProps
   return (
     <div className="space-y-4">
       <p className="text-xs sm:text-sm text-muted-foreground">
-        Provide detailed information about each body system. Tap a system to begin.
+        {t.bodySystems.description}
       </p>
 
       {/* System tabs - horizontal scrollable strip */}
@@ -71,8 +73,8 @@ export default function StepBodySystems({ data, onChange }: StepBodySystemsProps
                 isActive
                   ? "border-primary bg-primary text-primary-foreground shadow-sm"
                   : filled
-                  ? "border-border bg-accent/50 text-foreground"
-                  : "border-border text-muted-foreground hover:bg-accent active:scale-95"
+                    ? "border-border bg-accent/50 text-foreground"
+                    : "border-border text-muted-foreground hover:bg-accent active:scale-95"
               )}
             >
               <span className="text-sm">{sys.icon}</span>
