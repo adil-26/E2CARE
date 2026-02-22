@@ -17,6 +17,7 @@ import AuthRoleSelect from "@/pages/auth/AuthRoleSelect";
 import PatientAuth from "@/pages/auth/PatientAuth";
 import DoctorAuth from "@/pages/auth/DoctorAuth";
 import AdminAuth from "@/pages/auth/AdminAuth";
+import ResetPassword from "@/pages/auth/ResetPassword";
 
 // Public pages
 import EmergencyAccess from "@/pages/EmergencyAccess";
@@ -69,6 +70,7 @@ const App = () => (
               <Route path="/auth/patient" element={<PatientAuth />} />
               <Route path="/auth/doctor" element={<DoctorAuth />} />
               <Route path="/auth/admin" element={<AdminAuth />} />
+              <Route path="/auth/reset-password" element={<ResetPassword />} />
 
               {/* Public routes */}
               <Route path="/emergency-access/:medicalId" element={<EmergencyAccess />} />

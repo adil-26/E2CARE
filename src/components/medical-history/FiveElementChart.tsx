@@ -104,41 +104,75 @@ function MobileCards() {
 // ─── Desktop table view ───────────────────────────────────────────────────────
 function DesktopTable() {
     return (
-        <div className="overflow-x-auto rounded-xl border border-border/60 shadow-sm">
-            <table className="w-full text-[10px] border-collapse" style={{ minWidth: 860 }}>
-                <thead>
-                    <tr className="border-b border-border">
-                        <th className="sticky left-0 z-20 bg-muted/80 backdrop-blur text-left px-3 py-2.5 text-[9px] font-bold uppercase tracking-wider text-muted-foreground border-r border-border w-[130px]">
-                            ELEMENT / MERIDIAN
-                        </th>
-                        {COLUMNS.map(col => (
-                            <th key={col.key} className="px-2 py-2.5 border-r border-border text-center last:border-r-0" style={{ background: col.light }}>
-                                <div className="font-extrabold text-[10px] uppercase" style={{ color: col.color }}>
-                                    {col.emoji} {col.label}
-                                </div>
-                                <div className="text-[8px] text-muted-foreground mt-0.5 leading-tight">{col.sub}</div>
+        <div className="rounded-xl border border-border/60 shadow-sm overflow-hidden">
+            <div className="overflow-x-auto">
+                <table
+                    className="border-collapse text-[9px] sm:text-[10px]"
+                    style={{ width: "100%", tableLayout: "fixed" }}
+                >
+                    <colgroup>
+                        {/* row label col */}
+                        <col style={{ width: "13%" }} />
+                        {/* 6 element cols — equal width */}
+                        {COLUMNS.map(col => <col key={col.key} style={{ width: "14.5%" }} />)}
+                    </colgroup>
+
+                    <thead>
+                        <tr className="border-b border-border">
+                            <th className="sticky left-0 z-20 bg-muted text-left px-2 py-2 text-[8px] font-bold uppercase tracking-wide text-muted-foreground border-r border-border">
+                                ATTRIBUTE
                             </th>
-                        ))}
-                    </tr>
-                </thead>
-                <tbody>
-                    {ROWS.map((row, ri) => (
-                        <tr key={row.label} className={`border-b border-border/50 hover:bg-accent/30 transition-colors ${ri % 2 === 0 ? "bg-background" : "bg-muted/10"}`}>
-                            <td className="sticky left-0 z-10 bg-inherit px-3 py-2 border-r border-border font-semibold text-foreground whitespace-nowrap text-[10px]">
-                                <span className="mr-1.5">{row.emoji}</span>{row.label}
-                            </td>
                             {COLUMNS.map(col => (
-                                <td key={col.key} className="px-2 py-2 border-r border-border/40 last:border-r-0 text-center align-top text-[9px] leading-snug text-foreground/80">
-                                    {row.values[col.key]}
-                                </td>
+                                <th
+                                    key={col.key}
+                                    className="px-1.5 py-2 border-r border-border/60 last:border-r-0 text-center"
+                                    style={{ background: col.light }}
+                                >
+                                    <div className="font-extrabold text-[9px] sm:text-[10px] uppercase leading-tight" style={{ color: col.color }}>
+                                        {col.emoji} {col.label}
+                                    </div>
+                                    <div className="text-[7px] sm:text-[8px] text-muted-foreground mt-0.5 leading-tight font-normal">
+                                        {col.sub}
+                                    </div>
+                                </th>
                             ))}
                         </tr>
-                    ))}
-                </tbody>
-            </table>
+                    </thead>
+
+                    <tbody>
+                        {ROWS.map((row, ri) => (
+                            <tr
+                                key={row.label}
+                                className={`border-b border-border/40 hover:bg-accent/20 transition-colors ${ri % 2 === 0 ? "bg-background" : "bg-muted/15"}`}
+                            >
+                                {/* Sticky row label */}
+                                <td className="sticky left-0 z-10 bg-inherit px-2 py-1.5 border-r border-border font-semibold text-foreground">
+                                    <div className="flex items-center gap-1">
+                                        <span className="text-[10px] shrink-0">{row.emoji}</span>
+                                        <span className="text-[8px] sm:text-[9px] leading-tight">{row.label}</span>
+                                    </div>
+                                </td>
+                                {/* Element value cells */}
+                                {COLUMNS.map((col, ci) => (
+                                    <td
+                                        key={col.key}
+                                        className="px-1.5 py-1.5 border-r border-border/30 last:border-r-0 text-center align-top"
+                                        style={{ background: ri % 2 !== 0 ? col.light + "55" : undefined }}
+                                    >
+                                        <span className="text-[8px] sm:text-[9px] leading-snug text-foreground/80 break-words">
+                                            {row.values[col.key as ColKey]}
+                                        </span>
+                                    </td>
+                                ))}
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
         </div>
     );
 }
+
 
 // ─── Main Export ──────────────────────────────────────────────────────────────
 export default function FiveElementChart() {
