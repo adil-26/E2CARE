@@ -37,6 +37,7 @@ import Timeline from "@/pages/Timeline";
 import WalletPage from "@/pages/WalletPage";
 import Referrals from "@/pages/Referrals";
 import SettingsPage from "@/pages/SettingsPage";
+import ComparisonAnalysis from "@/pages/ComparisonAnalysis";
 
 // Doctor pages
 import DoctorDashboard from "@/pages/doctor/DoctorDashboard";
@@ -115,6 +116,7 @@ const App = () => (
                 <Route path="/wallet" element={<WalletPage />} />
                 <Route path="/referrals" element={<Referrals />} />
                 <Route path="/settings" element={<SettingsPage />} />
+                <Route path="/comparison" element={<ComparisonAnalysis />} />
               </Route>
 
               {/* Doctor routes */}

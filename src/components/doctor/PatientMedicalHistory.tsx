@@ -3,8 +3,9 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import {
   Heart, AlertTriangle, Scissors, Users, Baby, Brain,
-  Dumbbell, Stethoscope, Eye, Ear, Bone, Droplets
+  Dumbbell, Stethoscope, Eye, Ear, Bone, Droplets, ListChecks
 } from "lucide-react";
+import { generateClinicalNarrative } from "@/utils/clinicalNarrative";
 
 interface PatientMedicalHistoryProps {
   medicalHistory: any;
@@ -69,11 +70,20 @@ function renderObjectData(data: any): React.ReactNode {
           .replace(/^./, (s) => s.toUpperCase());
 
         if (Array.isArray(value)) {
+          const stringItems = value.map(item => {
+            if (typeof item === 'object' && item !== null) {
+              const primaryKey = ['name', 'condition', 'disease', 'surgery', 'illness', 'allergen'].find(k => item[k]);
+              if (primaryKey) return item[primaryKey];
+              return Object.values(item).filter(v => v !== null && v !== '').join(' - ');
+            }
+            return String(item);
+          });
+          
           return (
             <div key={key} className="py-1">
               <span className="text-muted-foreground text-xs">{label}:</span>
               <div className="mt-1">
-                <TagList items={value.map(String)} />
+                <TagList items={stringItems.filter(Boolean)} />
               </div>
             </div>
           );
@@ -136,6 +146,32 @@ export default function PatientMedicalHistory({ medicalHistory }: PatientMedical
           {medicalHistory.is_complete ? "Complete" : "In Progress"}
         </Badge>
       </div>
+      
+      {/* Clinical Narrative Summary */}
+      {filledSections.length > 0 && (
+        <Card className="border-l-4 border-l-primary shadow-sm overflow-hidden">
+          <CardHeader className="py-3 bg-muted/30">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <ListChecks className="h-4 w-4 text-primary" />
+              Comprehensive Clinical Summary
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-4 pb-4">
+            <div className="space-y-2">
+              {generateClinicalNarrative(medicalHistory).length > 0 ? (
+                generateClinicalNarrative(medicalHistory).map((sentence, i) => (
+                  <p key={i} className="text-sm leading-relaxed text-foreground/90 border-b border-border/50 pb-2 last:border-0 last:pb-0">
+                    <span className="text-primary mr-2">◆</span>
+                    {sentence}
+                  </p>
+                ))
+              ) : (
+                <p className="text-xs text-muted-foreground italic">Insufficient data to generate a detailed clinical narrative.</p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {filledSections.length === 0 ? (
         <div className="py-6 text-center">

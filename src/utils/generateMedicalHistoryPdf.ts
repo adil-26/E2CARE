@@ -1,6 +1,6 @@
-
 import jsPDF from "jspdf";
 import { autoTable } from "jspdf-autotable";
+import { generateClinicalNarrative } from "./clinicalNarrative";
 
 const COLORS = {
   primary: [37, 99, 235] as [number, number, number],
@@ -38,19 +38,46 @@ interface MedicalHistoryForPdf {
   body_systems: Record<string, any>;
   lifestyle: Record<string, any>;
   is_complete: boolean;
+  
+  // New Enhanced Sections
+  analysis?: {
+    scores: { element: string; score: number; matchedKeywords: string[] }[];
+    dominantElement: string | null;
+    insights: string[];
+    recommendations: string[];
+  };
+  assessment?: {
+    totalScore: number;
+    categoryScores: Record<string, number>;
+  };
+  clinical?: {
+    vitals: any[];
+    medications: any[];
+  };
+  acupressure?: {
+    caseData: any;
+    latestVisit: any;
+    symptoms: any[];
+    formulas: any[];
+  };
 }
 
 const STEPS = [
-  { key: "birth_history", label: "Birth History", icon: "🍼", color: COLORS.primary, bgColor: COLORS.primaryLight },
-  { key: "childhood_illnesses", label: "Childhood Illnesses", icon: "🧒", color: COLORS.teal, bgColor: COLORS.tealBg },
-  { key: "medical_conditions", label: "Medical Conditions", icon: "📋", color: COLORS.danger, bgColor: COLORS.dangerBg },
-  { key: "family_history", label: "Family History", icon: "👨‍👩‍👧‍👦", color: COLORS.purple, bgColor: COLORS.purpleBg },
-  { key: "gender_health", label: "Gender Health", icon: "⚕️", color: COLORS.rose, bgColor: COLORS.roseBg },
-  { key: "surgeries", label: "Surgeries", icon: "🏥", color: COLORS.orange, bgColor: COLORS.orangeBg },
-  { key: "allergies", label: "Allergies", icon: "🤧", color: COLORS.warning, bgColor: COLORS.warningBg },
-  { key: "body_systems", label: "Body Systems", icon: "🫀", color: COLORS.danger, bgColor: COLORS.dangerBg },
-  { key: "lifestyle", label: "Lifestyle", icon: "🏃", color: COLORS.success, bgColor: COLORS.successBg },
+  { key: "birth_history", label: "Birth History", icon: ">", color: COLORS.primary, bgColor: COLORS.primaryLight },
+  { key: "childhood_illnesses", label: "Childhood Illnesses", icon: ">", color: COLORS.teal, bgColor: COLORS.tealBg },
+  { key: "medical_conditions", label: "Medical Conditions", icon: ">", color: COLORS.danger, bgColor: COLORS.dangerBg },
+  { key: "family_history", label: "Family History", icon: ">", color: COLORS.purple, bgColor: COLORS.purpleBg },
+  { key: "gender_health", label: "Gender Health", icon: ">", color: COLORS.rose, bgColor: COLORS.roseBg },
+  { key: "surgeries", label: "Surgeries", icon: ">", color: COLORS.orange, bgColor: COLORS.orangeBg },
+  { key: "allergies", label: "Allergies", icon: ">", color: COLORS.warning, bgColor: COLORS.warningBg },
+  { key: "body_systems", label: "Body Systems", icon: ">", color: COLORS.danger, bgColor: COLORS.dangerBg },
+  { key: "lifestyle", label: "Lifestyle", icon: ">", color: COLORS.success, bgColor: COLORS.successBg },
+  { key: "analysis", label: "Elemental Analysis", icon: ">", color: COLORS.purple, bgColor: COLORS.purpleBg },
+  { key: "clinical", label: "Clinical Dashboard", icon: ">", color: COLORS.primary, bgColor: COLORS.primaryLight },
+  { key: "acupressure", label: "Treatment Progress", icon: ">", color: COLORS.teal, bgColor: COLORS.tealBg },
 ];
+
+const GLOBAL_MARGIN = 15;
 
 function formatKey(key: string): string {
   return key
@@ -59,13 +86,37 @@ function formatKey(key: string): string {
 }
 
 function formatValue(value: any): string {
-  if (value === null || value === undefined || value === "") return "—";
+  if (value === null || value === undefined || value === "") return "-";
+  
   if (Array.isArray(value)) {
     if (value.length === 0) return "None";
-    return value.join(", ");
+    return value.map(v => typeof v === 'object' ? formatValue(v) : String(v)).join(", ");
   }
+  
   if (typeof value === "boolean") return value ? "Yes" : "No";
-  if (typeof value === "object") return JSON.stringify(value);
+  
+  if (typeof value === "object") {
+    const entries = Object.entries(value).filter(([_, v]) => v !== null && v !== "" && v !== undefined);
+    if (entries.length === 0) return "-";
+    
+    return entries.map(([k, v]) => {
+      const label = k.length < 4 ? k.toUpperCase() : k.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+      let displayVal = "";
+      
+      if (typeof v === 'object' && v !== null) {
+        displayVal = Object.entries(v)
+          .filter(([_, subV]) => subV !== null && subV !== "")
+          .map(([subK, subV]) => `${subK}: ${subV}`)
+          .join(", ");
+        if (!displayVal) displayVal = "-";
+      } else {
+        displayVal = String(v);
+      }
+      
+      return `${label}: ${displayVal}`;
+    }).join(" | ");
+  }
+  
   return String(value).replace(/_/g, " ");
 }
 
@@ -77,7 +128,7 @@ function addFooter(doc: jsPDF, pageNum: number, totalPages: number) {
   doc.line(15, pageH - 15, pageW - 15, pageH - 15);
   doc.setFontSize(7);
   doc.setTextColor(...COLORS.muted);
-  doc.text("Generated by MedVault • Confidential Medical Document", 15, pageH - 10);
+  doc.text("Generated by My Health Compass | Confidential Medical Document", 15, pageH - 10);
   doc.text(`Page ${pageNum} of ${totalPages}`, pageW - 15, pageH - 10, { align: "right" });
   doc.text(new Date().toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }), pageW / 2, pageH - 10, { align: "center" });
 }
@@ -176,7 +227,79 @@ function addChipList(doc: jsPDF, y: number, label: string, items: string[], colo
   return y + chipH + 4;
 }
 
-// ─── Section Renderers ───
+// === Section Renderers ===
+
+function renderClinicalNarrativeSection(doc: jsPDF, y: number, history: MedicalHistoryForPdf, pageW: number): number {
+  const sentences = generateClinicalNarrative(history);
+  if (sentences.length === 0) return y;
+
+  const margin = GLOBAL_MARGIN;
+  const contentW = pageW - margin * 2;
+
+  y = checkPageBreak(doc, y, 20);
+  
+  doc.setFillColor(...COLORS.primaryLight);
+  doc.roundedRect(margin, y, contentW, sentences.length * 5 + 10, 2, 2, "F");
+  
+  doc.setFontSize(9);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(...COLORS.primary);
+  doc.text("Clinical Narrative & Executive Summary", margin + 4, y + 6);
+  
+  y += 12;
+  doc.setFontSize(7.5);
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(...COLORS.dark);
+  
+  sentences.forEach((sentence) => {
+    const lines = doc.splitTextToSize(`- ${sentence}`, contentW - 8);
+    doc.text(lines, margin + 6, y);
+    y += lines.length * 4;
+    y = checkPageBreak(doc, y, 10);
+  });
+
+  return y + 5;
+}
+
+function renderClinicalAlerts(doc: jsPDF, y: number, history: MedicalHistoryForPdf, pageW: number): number {
+  const contentW = pageW - GLOBAL_MARGIN * 2;
+  
+  const activeConditions = (history.medical_conditions?.conditions || []).filter(
+    (c: any) => c.status?.toLowerCase() === "active" || c.status?.toLowerCase() === "chronic"
+  );
+  const severeAllergies = (history.allergies?.drug_allergies || []).length > 0;
+  
+  if (activeConditions.length === 0 && !severeAllergies) return y;
+
+  y = checkPageBreak(doc, y, 30);
+  
+  // Alert Box Container
+  doc.setFillColor(254, 242, 242); // red-50
+  doc.setDrawColor(252, 165, 165); // red-300
+  doc.roundedRect(GLOBAL_MARGIN, y, contentW, activeConditions.length * 6 + 15, 2, 2, "FD");
+  
+  doc.setFontSize(10);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(185, 28, 28); // red-700
+  doc.text("Clinical Overview: Active Concerns", GLOBAL_MARGIN + 5, y + 6);
+  
+  y += 12;
+  doc.setFontSize(8);
+  doc.setFont("helvetica", "normal");
+  
+  activeConditions.forEach((c: any) => {
+    doc.text(`- ${c.name} (${c.severity || 'Moderate'}) - ${c.status}`, GLOBAL_MARGIN + 8, y);
+    y += 5;
+  });
+  
+  if (severeAllergies) {
+    doc.setFont("helvetica", "bold");
+    doc.text(`- DRUG ALLERGIES REPORTED`, GLOBAL_MARGIN + 8, y);
+    y += 5;
+  }
+  
+  return y + 5;
+}
 
 function renderBirthHistory(doc: jsPDF, y: number, data: Record<string, any>, pageW: number): number {
   const step = STEPS[0];
@@ -229,7 +352,6 @@ function renderChildhoodIllnesses(doc: jsPDF, y: number, data: Record<string, an
   }
   return y;
 }
-
 function renderMedicalConditions(doc: jsPDF, y: number, data: Record<string, any>, pageW: number): number {
   const step = STEPS[2];
   y = addSectionHeader(doc, y, step, pageW);
@@ -242,44 +364,55 @@ function renderMedicalConditions(doc: jsPDF, y: number, data: Record<string, any
     return y + 8;
   }
 
-  const tableBody = conditions.map((c) => [
-    c.name || "—",
-    (c.status || "—").toUpperCase(),
-    (c.severity || "—").charAt(0).toUpperCase() + (c.severity || "").slice(1),
-    c.diagnosed_year || "—",
-    c.treatment || "—",
-    c.doctor || "—",
-  ]);
+  // Draw conditions as "Cards" or enhanced rows
+  conditions.forEach((c) => {
+    y = checkPageBreak(doc, y, 25);
+    
+    const isHighRisk = c.status?.toLowerCase() === "active" || c.status?.toLowerCase() === "chronic";
+    const statusColor = isHighRisk ? COLORS.danger : COLORS.success;
+    const statusBg = isHighRisk ? COLORS.dangerBg : COLORS.successBg;
 
-  autoTable(doc, {
-    startY: y,
-    margin: { left: 15, right: 15 },
-    head: [["Condition", "Status", "Severity", "Year", "Treatment", "Doctor"]],
-    body: tableBody,
-    theme: "plain",
-    styles: {
-      fontSize: 7,
-      cellPadding: { top: 2, bottom: 2, left: 2, right: 2 },
-      textColor: COLORS.dark,
-      lineColor: COLORS.border,
-      lineWidth: 0.2,
-    },
-    headStyles: { fillColor: COLORS.bg, textColor: COLORS.muted, fontStyle: "bold", fontSize: 6.5 },
-    columnStyles: { 0: { fontStyle: "bold" } },
-    didParseCell: (hookData) => {
-      if (hookData.section === "body" && hookData.column.index === 1) {
-        const status = String(hookData.cell.raw).toLowerCase();
-        if (status === "active" || status === "chronic") {
-          hookData.cell.styles.textColor = COLORS.danger;
-          hookData.cell.styles.fontStyle = "bold";
-        } else if (status === "resolved") {
-          hookData.cell.styles.textColor = COLORS.success;
-        }
-      }
-    },
+    // Condition Header line
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(...COLORS.dark);
+    doc.text(c.name || "Unnamed Condition", 19, y);
+    
+    // Status Badge
+    const statusText = (c.status || "Unknown").toUpperCase();
+    const badgeW = doc.getTextWidth(statusText) + 4;
+    doc.setFillColor(...statusBg);
+    doc.roundedRect(pageW - GLOBAL_MARGIN - badgeW, y - 4, badgeW, 5, 1, 1, "F");
+    doc.setFontSize(6.5);
+    doc.setTextColor(...statusColor);
+    doc.text(statusText, pageW - GLOBAL_MARGIN - badgeW/2, y - 0.5, { align: "center" });
+
+    y += 5;
+    
+    // Details
+    doc.setFontSize(7.5);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(...COLORS.muted);
+    
+    let details = [];
+    if (c.severity) details.push(`Severity: ${c.severity}`);
+    if (c.diagnosed_year) details.push(`Since: ${c.diagnosed_year}`);
+    if (c.doctor) details.push(`Doctor: ${c.doctor}`);
+    
+    doc.text(details.join("  |  "), 19, y);
+    y += 4.5;
+    
+    if (c.treatment) {
+      doc.setTextColor(...COLORS.dark);
+      doc.text(`Treatment: ${c.treatment}`, 19, y);
+      y += 4.5;
+    }
+    
+    doc.setDrawColor(...COLORS.border);
+    doc.setLineWidth(0.1);
+    doc.line(19, y, pageW - GLOBAL_MARGIN, y);
+    y += 6;
   });
-
-  y = (doc as any).lastAutoTable.finalY + 6;
   if (data.notes) {
     doc.setFontSize(7.5);
     doc.setFont("helvetica", "italic");
@@ -369,7 +502,7 @@ function renderSurgeries(doc: jsPDF, y: number, data: Record<string, any>, pageW
   const surgeries: any[] = data.surgeries || [];
   if (surgeries.length > 0) {
     const body = surgeries.map((s) => [
-      s.name || "—", s.year || "—", s.hospital || "—", s.reason || "—", s.complications || "None",
+      s.name || "-", s.year || "-", s.hospital || "-", s.reason || "-", s.complications || "None",
     ]);
     autoTable(doc, {
       startY: y,
@@ -393,7 +526,7 @@ function renderSurgeries(doc: jsPDF, y: number, data: Record<string, any>, pageW
     doc.text("Hospitalizations", 17, y);
     y += 4;
 
-    const body = hosps.map((h) => [h.reason || "—", h.year || "—", h.duration || "—", h.hospital || "—"]);
+    const body = hosps.map((h) => [h.reason || "-", h.year || "-", h.duration || "-", h.hospital || "-"]);
     autoTable(doc, {
       startY: y,
       margin: { left: 15, right: 15 },
@@ -429,7 +562,7 @@ function renderAllergies(doc: jsPDF, y: number, data: Record<string, any>, pageW
   y = addSectionHeader(doc, y, step, pageW);
 
   if (data.drug_allergies?.length) {
-    y = addChipList(doc, y, "💊 Drug Allergies", data.drug_allergies, COLORS.danger, COLORS.dangerBg);
+    y = addChipList(doc, y, "Drug Allergies", data.drug_allergies, COLORS.danger, COLORS.dangerBg);
   }
   if (data.other_drug_allergies) {
     doc.setFontSize(7.5);
@@ -438,10 +571,10 @@ function renderAllergies(doc: jsPDF, y: number, data: Record<string, any>, pageW
     y += 6;
   }
   if (data.food_allergies?.length) {
-    y = addChipList(doc, y, "🍽️ Food Allergies", data.food_allergies, COLORS.orange, COLORS.orangeBg);
+    y = addChipList(doc, y, "Food Allergies", data.food_allergies, COLORS.orange, COLORS.orangeBg);
   }
   if (data.environmental_allergies?.length) {
-    y = addChipList(doc, y, "🌿 Environmental Allergies", data.environmental_allergies, COLORS.teal, COLORS.tealBg);
+    y = addChipList(doc, y, "Environmental Allergies", data.environmental_allergies, COLORS.teal, COLORS.tealBg);
   }
 
   const extraRows: [string, string][] = [];
@@ -468,14 +601,14 @@ function renderBodySystems(doc: jsPDF, y: number, data: Record<string, any>, pag
   y = addSectionHeader(doc, y, step, pageW);
 
   const systemLabels: Record<string, string> = {
-    ent: "👂 ENT & Teeth",
-    eyes: "👁️ Eyes",
-    cardio: "❤️ Heart & Lungs",
-    gi: "🫁 Digestive",
-    urinary: "🧪 Urinary",
-    skin: "🧴 Skin & Hair",
-    neuro: "🧠 Nervous System",
-    musculo: "🦴 Bones & Joints",
+    ent: "ENT, Oral & Dental",
+    eyes: "Eyes",
+    cardio: "Heart & Lungs",
+    gi: "Digestive",
+    urinary: "Urinary",
+    skin: "Skin & Hair",
+    neuro: "Nervous System",
+    musculo: "Bones & Joints",
   };
 
   const filledSystems = Object.entries(data).filter(
@@ -504,11 +637,30 @@ function renderBodySystems(doc: jsPDF, y: number, data: Record<string, any>, pag
 
     const skipKeys = ["notes", "teeth_data", "stool_color", "urine_color"];
     const entries = Object.entries(sysData as Record<string, any>)
-      .filter(([k, v]) => !skipKeys.includes(k) && v !== "" && v !== null && v !== undefined);
+      .filter(([k, v]) => !skipKeys.includes(k) && v !== "" && v !== null && v !== undefined && v !== false && !(Array.isArray(v) && v.length === 0));
 
     if (entries.length > 0) {
-      const rows: [string, string][] = entries.map(([k, v]) => [formatKey(k), formatValue(v)]);
-      y = addKeyValueTable(doc, y, rows);
+      // Use chips for boolean flags and arrays of strings (conditions)
+      const flagEntries = entries.filter(([_, v]) => typeof v === "boolean" && v === true);
+      const arrayEntries = entries.filter(([_, v]) => Array.isArray(v) && v.length > 0 && typeof v[0] === 'string');
+      const descriptiveEntries = entries.filter(([_, v]) => 
+        (typeof v !== "boolean" && !Array.isArray(v)) || 
+        (typeof v === "boolean" && v === false)
+      );
+
+      const allChips = [
+        ...flagEntries.map(([k]) => formatKey(k)),
+        ...arrayEntries.flatMap(([_, v]) => v as string[])
+      ];
+
+      if (allChips.length > 0) {
+        y = addChipList(doc, y, "Symptoms & Findings", allChips, COLORS.primary, COLORS.primaryLight);
+      }
+
+      if (descriptiveEntries.length > 0) {
+        const rows: [string, string][] = descriptiveEntries.map(([k, v]) => [formatKey(k), formatValue(v)]);
+        y = addKeyValueTable(doc, y, rows);
+      }
     }
 
     if ((sysData as any).notes) {
@@ -521,6 +673,171 @@ function renderBodySystems(doc: jsPDF, y: number, data: Record<string, any>, pag
       y += lines.length * 3.5 + 3;
     }
   });
+
+  return y;
+}
+
+function renderFiveElementAnalysis(doc: jsPDF, y: number, analysis: any, pageW: number): number {
+  if (!analysis) return y;
+  const step = STEPS.find(s => s.key === "analysis")!;
+  y = addSectionHeader(doc, y, step, pageW);
+  const margin = GLOBAL_MARGIN;
+  const contentW = pageW - margin * 2;
+
+  // Render bars for each element
+  const scores = analysis.scores || [];
+  scores.forEach((s: any) => {
+    y = checkPageBreak(doc, y, 12);
+    doc.setFontSize(8);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(...COLORS.dark);
+    doc.text(s.element.replace("_", " ").toUpperCase(), margin, y + 4);
+    
+    doc.setFillColor(241, 245, 249);
+    doc.roundedRect(margin + 40, y + 1.5, contentW - 60, 4, 1, 1, "F");
+    
+    const fillW = Math.max(((contentW - 60) * s.score) / 100, 2);
+    doc.setFillColor(...(s.score > 60 ? COLORS.primary : COLORS.muted));
+    doc.roundedRect(margin + 40, y + 1.5, fillW, 4, 1, 1, "F");
+    
+    doc.text(`${s.score}%`, margin + contentW - 15, y + 4, { align: "right" });
+    
+    if (s.matchedKeywords && s.matchedKeywords.length > 0) {
+      doc.setFontSize(6);
+      doc.setFont("helvetica", "italic");
+      doc.setTextColor(...COLORS.muted);
+      doc.text(`Keywords: ${s.matchedKeywords.slice(0, 5).join(", ")}`, margin + 40, y + 8);
+      y += 10;
+    } else {
+      y += 7;
+    }
+  });
+
+  if (analysis.insights && analysis.insights.length > 0) {
+    y = checkPageBreak(doc, y, 20);
+    y += 5;
+    doc.setFontSize(8.5);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(...COLORS.primary);
+    doc.text("Clinical Insights", margin, y);
+    y += 5;
+    
+    doc.setFontSize(7.5);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(...COLORS.dark);
+    analysis.insights.forEach((insight: string) => {
+      const lines = doc.splitTextToSize(`- ${insight}`, contentW - 5);
+      doc.text(lines, margin + 2, y);
+      y += lines.length * 4;
+      y = checkPageBreak(doc, y, 10);
+    });
+  }
+
+  return y + 5;
+}
+
+function renderClinicalDashboard(doc: jsPDF, y: number, clinical: any, pageW: number): number {
+  if (!clinical) return y;
+  const step = STEPS.find(s => s.key === "clinical")!;
+  y = addSectionHeader(doc, y, step, pageW);
+  const margin = GLOBAL_MARGIN;
+
+  if (clinical.vitals && clinical.vitals.length > 0) {
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "bold");
+    doc.text("Vital Signs", margin + 2, y + 2);
+    y += 5;
+
+    const body = clinical.vitals.map((v: any) => [
+      v.vital_type.replace(/_/g, " ").toUpperCase(),
+      `${v.value} ${v.unit || ""}`,
+      new Date(v.recorded_at).toLocaleDateString("en-IN", { day: "2-digit", month: "short" }),
+      v.status || "Normal"
+    ]);
+
+    autoTable(doc, {
+      startY: y,
+      margin: { left: margin, right: margin },
+      head: [["Vital", "Value", "Date", "Status"]],
+      body,
+      theme: "striped",
+      styles: { fontSize: 7.5, cellPadding: 2 },
+    });
+    y = (doc as any).lastAutoTable.finalY + 8;
+  }
+
+  if (clinical.medications && clinical.medications.length > 0) {
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "bold");
+    doc.text("Current Medications", margin + 2, y + 2);
+    y += 5;
+
+    const body = clinical.medications.map((m: any) => [
+      m.name,
+      m.dosage,
+      m.frequency,
+      m.notes || "-"
+    ]);
+
+    autoTable(doc, {
+      startY: y,
+      margin: { left: margin, right: margin },
+      head: [["Medicine", "Dosage", "Freq", "Notes"]],
+      body,
+      theme: "grid",
+      styles: { fontSize: 7, cellPadding: 2 },
+    });
+    y = (doc as any).lastAutoTable.finalY + 8;
+  }
+
+  return y;
+}
+
+function renderAcupressureProtocol(doc: jsPDF, y: number, acupressure: any, pageW: number): number {
+  if (!acupressure) return y;
+  const step = STEPS.find(s => s.key === "acupressure")!;
+  y = addSectionHeader(doc, y, step, pageW);
+  const margin = GLOBAL_MARGIN;
+  const contentW = pageW - margin * 2;
+
+  if (acupressure.symptoms && acupressure.symptoms.length > 0) {
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "bold");
+    doc.text("Symptom Progress", margin + 2, y + 2);
+    y += 6;
+
+    acupressure.symptoms.forEach((s: any) => {
+      y = checkPageBreak(doc, y, 8);
+      doc.setFontSize(8);
+      doc.text(`${s.symptom_name}: ${s.relief_percentage}% relief`, margin + 5, y);
+      y += 5;
+    });
+    y += 4;
+  }
+
+  if (acupressure.formulas && acupressure.formulas.length > 0) {
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "bold");
+    doc.text("Treatment Points", margin + 2, y + 2);
+    y += 5;
+
+    const body = acupressure.formulas.map((f: any) => [
+      f.body_part,
+      f.joint || "-",
+      f.elements ? `S: ${f.elements.sedate.join(",")} | T: ${f.elements.tonify.join(",")}` : "-",
+      f.color_applied || "-"
+    ]);
+
+    autoTable(doc, {
+      startY: y,
+      margin: { left: margin, right: margin },
+      head: [["Part", "Joint", "Elements", "Color"]],
+      body,
+      theme: "plain",
+      styles: { fontSize: 7, cellPadding: 2, lineColor: COLORS.border, lineWidth: 0.1 },
+    });
+    y = (doc as any).lastAutoTable.finalY + 8;
+  }
 
   return y;
 }
@@ -657,29 +974,40 @@ export async function generateMedicalHistoryPdf(
       doc.text(`${step.icon}  ${i + 1}. ${step.label}`, margin + 4, y);
       const statusColor = filled ? COLORS.success : COLORS.muted;
       doc.setTextColor(statusColor[0], statusColor[1], statusColor[2]);
-      doc.text(filled ? "✓ Filled" : "○ Empty", pageW - margin, y, { align: "right" });
+      doc.text(filled ? "Recorded" : "Empty", pageW - margin, y, { align: "right" });
       y += 5.5;
     });
 
-    y += 6;
+    y += 10;
 
-    // ─── Render each section ───
-    const renderers = [
-      renderBirthHistory,
-      renderChildhoodIllnesses,
-      renderMedicalConditions,
-      renderFamilyHistory,
-      renderGenderHealth,
-      renderSurgeries,
-      renderAllergies,
-      renderBodySystems,
-      renderLifestyle,
-    ];
+    // ─── Clinical Overview ───
+    y = renderClinicalAlerts(doc, y, history, pageW);
+    y += 5;
 
-    STEPS.forEach((step, i) => {
-      const sectionData = (history as any)[step.key] || {};
-      if (Object.keys(sectionData).length === 0) return;
-      y = renderers[i](doc, y, sectionData, pageW);
+    // ─── Executive Summary ───
+    y = renderClinicalNarrativeSection(doc, y, history, pageW);
+    y += 5;
+
+    // === Render each section ===
+    const renderers: Record<string, (doc: jsPDF, y: number, data: any, pageW: number) => number> = {
+      birth_history: renderBirthHistory,
+      childhood_illnesses: renderChildhoodIllnesses,
+      medical_conditions: renderMedicalConditions,
+      family_history: renderFamilyHistory,
+      gender_health: renderGenderHealth,
+      surgeries: renderSurgeries,
+      allergies: renderAllergies,
+      body_systems: renderBodySystems,
+      lifestyle: renderLifestyle,
+      analysis: renderFiveElementAnalysis,
+      clinical: renderClinicalDashboard,
+      acupressure: renderAcupressureProtocol,
+    };
+
+    STEPS.forEach((step) => {
+      const sectionData = (history as any)[step.key];
+      if (!sectionData || (typeof sectionData === 'object' && Object.keys(sectionData).length === 0)) return;
+      y = renderers[step.key](doc, y, sectionData, pageW);
       y += 2;
     });
 

@@ -18,6 +18,7 @@ export const en = {
         doctorRegister: "Register as Doctor",
         main: "Main",
         more: "More",
+        comparison: "Comparison Analysis",
     },
     // Common
     common: {

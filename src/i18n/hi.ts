@@ -20,6 +20,7 @@ export const hi: typeof en = {
         doctorRegister: "डॉक्टर के रूप में पंजीकरण",
         main: "मुख्य",
         more: "अधिक",
+        comparison: "तुलना विश्लेषण",
     },
     // Common
     common: {

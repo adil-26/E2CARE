@@ -1,8 +1,10 @@
 import { useParams, useNavigate } from "react-router-dom";
+import { useState } from "react";
 import { motion } from "framer-motion";
 import {
   ArrowLeft, User, Heart, Droplets, Activity, Pill, FileText, Stethoscope,
-  TrendingUp, Thermometer, Wind, Plus, Brain,
+  TrendingUp, Thermometer, Wind, Plus, Brain, LayoutGrid, BarChart3, ExternalLink,
+  Download, Loader2
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,14 +13,19 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { usePatientFullData } from "@/hooks/useDoctorPatients";
 import PatientMedicalHistory from "@/components/doctor/PatientMedicalHistory";
+import { AyurvedicCaseTab } from "@/components/ayurveda/AyurvedicCaseTab";
+import TrendChart from "@/components/records/TrendChart";
+import ComparisonTable from "@/components/records/ComparisonTable";
+import { downloadComparisonReport } from "@/utils/reportExportUtils";
 import { format } from "date-fns";
-
+import { MedicalReport } from "@/hooks/useMedicalReports";
 export default function PatientDetail() {
   const { patientId } = useParams<{ patientId: string }>();
   const navigate = useNavigate();
   const { patientData, isLoading } = usePatientFullData(patientId);
-
-  if (isLoading) {
+  const [selectedReportId, setSelectedReportId] = useState<string | null>(null);
+  const [analysisView, setAnalysisView] = useState<"trends" | "comparison">("trends");
+  const [isExporting, setIsExporting] = useState(false);  if (isLoading) {
     return <div className="flex items-center justify-center py-16 text-muted-foreground">Loading patient data...</div>;
   }
 
@@ -28,7 +35,8 @@ export default function PatientDetail() {
 
   const { profile, vitals, medications, reports, conditionLogs, medicalHistory } = patientData;
   const initials = (profile.full_name || "P").split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2);
-
+  const completedReports = reports.filter((r: any) => r.status === "completed") as MedicalReport[];
+  const hasTestData = completedReports.some(r => r.extracted_data?.test_results?.length > 0);
   return (
     <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
       <Button variant="ghost" size="sm" onClick={() => navigate("/doctor/patients")}>
@@ -57,12 +65,14 @@ export default function PatientDetail() {
       </Card>
 
       <Tabs defaultValue="history">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-7 mb-8 overflow-x-auto scrollbar-none">
           <TabsTrigger value="history">History</TabsTrigger>
           <TabsTrigger value="vitals">Vitals</TabsTrigger>
           <TabsTrigger value="medications">Meds</TabsTrigger>
           <TabsTrigger value="reports">Reports</TabsTrigger>
-          <TabsTrigger value="conditions">Conditions</TabsTrigger>
+          <TabsTrigger value="analysis">Analysis</TabsTrigger>
+          <TabsTrigger value="conditions">Log</TabsTrigger>
+          <TabsTrigger value="ayurveda">Ayurveda</TabsTrigger>
         </TabsList>
 
         {/* Medical History Tab */}
@@ -115,24 +125,113 @@ export default function PatientDetail() {
 
         {/* Reports Tab */}
         <TabsContent value="reports" className="space-y-2 pt-3">
-          {reports.length === 0 ? (
-            <p className="py-6 text-center text-sm text-muted-foreground">No reports uploaded</p>
+          {selectedReportId ? (
+            <div className="bg-card rounded-xl border border-border p-1">
+              <ReportDetail 
+                report={reports.find((r: any) => r.id === selectedReportId) as MedicalReport} 
+                onBack={() => setSelectedReportId(null)} 
+              />
+            </div>
           ) : (
-            reports.map((r: any) => (
-              <Card key={r.id} className="shadow-sm">
-                <CardContent className="flex items-center gap-3 p-4">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-secondary/10">
-                    <FileText className="h-5 w-5 text-secondary" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="font-medium text-foreground">{r.title}</p>
-                    <p className="text-xs text-muted-foreground">{r.report_type} • {r.report_date || "No date"}</p>
-                    {r.ai_summary && <p className="mt-1 text-xs text-muted-foreground line-clamp-2">{r.ai_summary}</p>}
-                  </div>
-                  <Badge variant="secondary">{r.status}</Badge>
-                </CardContent>
-              </Card>
-            ))
+            <>
+              {reports.length === 0 ? (
+                <p className="py-6 text-center text-sm text-muted-foreground">No reports uploaded</p>
+              ) : (
+                reports.map((r: any) => (
+                  <Card 
+                    key={r.id} 
+                    className="shadow-sm hover:border-primary/50 transition-colors cursor-pointer"
+                    onClick={() => setSelectedReportId(r.id)}
+                  >
+                    <CardContent className="flex items-center gap-3 p-4">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-secondary/10">
+                        <FileText className="h-5 w-5 text-secondary" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="font-medium text-foreground">{r.title}</p>
+                        <p className="text-xs text-muted-foreground">{r.report_type} • {r.report_date || "No date"}</p>
+                        {r.ai_summary && <p className="mt-1 text-xs text-muted-foreground line-clamp-1 italic">"{r.ai_summary.substring(0, 100)}..."</p>}
+                      </div>
+                      <div className="flex flex-col items-end gap-2">
+                        <Badge variant="secondary" className="text-[10px]">{r.status}</Badge>
+                        {r.file_url && (
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-8 w-8"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              window.open(r.file_url, '_blank');
+                            }}
+                          >
+                            <ExternalLink className="h-4 w-4 text-muted-foreground" />
+                          </Button>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))
+              )}
+            </>
+          )}
+        </TabsContent>
+
+        {/* Analysis Tab */}
+        <TabsContent value="analysis" className="space-y-4 pt-3">
+          <div className="flex items-center justify-between mb-2">
+            <div>
+              <h3 className="text-sm font-semibold text-foreground">Health Analysis</h3>
+              <p className="text-[10px] text-muted-foreground">Comprehensive trends and comparisons across all records</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 gap-1.5 text-[10px] sm:text-xs"
+                onClick={async () => {
+                  setIsExporting(true);
+                  try { await downloadComparisonReport(completedReports); }
+                  catch (e) {}
+                  finally { setIsExporting(false); }
+                }}
+                disabled={!hasTestData || isExporting}
+              >
+                {isExporting ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Download className="h-3.5 w-3.5" />
+                )}
+                <span className="hidden sm:inline">Export Analysis</span>
+                <span className="sm:hidden">Export</span>
+              </Button>
+
+              <div className="flex bg-muted p-1 rounded-lg">
+                <button
+                  onClick={() => setAnalysisView("trends")}
+                  className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-medium transition-all ${
+                    analysisView === "trends" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground"
+                  }`}
+                >
+                  <TrendingUp className="h-3 w-3" />
+                  Trends
+                </button>
+                <button
+                  onClick={() => setAnalysisView("comparison")}
+                  className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-medium transition-all ${
+                    analysisView === "comparison" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground"
+                  }`}
+                >
+                  <LayoutGrid className="h-3 w-3" />
+                  Comparison
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {analysisView === "trends" ? (
+            <TrendChart reports={completedReports} />
+          ) : (
+            <ComparisonTable reports={completedReports} />
           )}
         </TabsContent>
 
@@ -151,6 +250,12 @@ export default function PatientDetail() {
               </div>
             ))
           )}
+        </TabsContent>
+
+        {/* Ayurveda Tab */}
+        <TabsContent value="ayurveda" className="pt-3">
+          {/* Note: In a real app doctorId is dynamic from auth but we hardcode 'doctor' for now */}
+          <AyurvedicCaseTab patientId={patientId || ''} doctorId="doctor-mock-id" />
         </TabsContent>
       </Tabs>
     </motion.div>

@@ -12,6 +12,9 @@ import { useToast } from "@/hooks/use-toast";
 import { useMedicalReports, MedicalReport } from "@/hooks/useMedicalReports";
 import ReportDetail from "@/components/records/ReportDetail";
 import TrendChart from "@/components/records/TrendChart";
+import ComparisonTable from "@/components/records/ComparisonTable";
+import { LayoutGrid, Table as TableIcon, Download } from "lucide-react";
+import { downloadComparisonReport } from "@/utils/reportExportUtils";
 
 const reportTypes = [
   { value: "lab", label: "Lab / Blood Test", icon: "🧪", shortLabel: "Lab" },
@@ -34,6 +37,7 @@ export default function Records() {
   const [showUpload, setShowUpload] = useState(false);
   const [selectedReport, setSelectedReport] = useState<MedicalReport | null>(null);
   const [activeCategory, setActiveCategory] = useState<string>("all");
+  const [trendView, setTrendView] = useState<"visual" | "table">("visual");
   const [uploadForm, setUploadForm] = useState({
     file: null as File | null,
     title: "",
@@ -41,6 +45,7 @@ export default function Records() {
     reportDate: "",
   });
   const [preview, setPreview] = useState<string | null>(null);
+  const [isExporting, setIsExporting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -287,18 +292,79 @@ export default function Records() {
         </div>
       )}
 
-      {/* Inline Trend Chart */}
+      {/* Inline Trend Chart / Comparison Table */}
       {hasTestData && (
         <div className="pt-2">
-          <h3 className="font-display text-base sm:text-lg font-bold text-foreground mb-3 flex items-center gap-2">
-            📊 Health Trends
-            <span className="text-[10px] font-normal text-muted-foreground">
-              {completedReports.length === 1
-                ? "Upload more reports to see trends over time"
-                : `Tracking across ${completedReports.length} reports`}
-            </span>
-          </h3>
-          <TrendChart reports={completedReports} />
+          <div className="flex items-center justify-between mb-3 px-1">
+            <h3 className="font-display text-base sm:text-lg font-bold text-foreground flex items-center gap-2">
+              📊 Health Analysis
+              <span className="text-[10px] font-normal text-muted-foreground">
+                {completedReports.length === 1
+                  ? "Upload more reports to see trends over time"
+                  : `Across ${completedReports.length} reports`}
+              </span>
+            </h3>
+            
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 gap-1.5 text-[10px] sm:text-xs"
+                onClick={async () => {
+                  setIsExporting(true);
+                  try { await downloadComparisonReport(completedReports); }
+                  catch (e) {}
+                  finally { setIsExporting(false); }
+                }}
+                disabled={!hasTestData || isExporting}
+              >
+                {isExporting ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Download className="h-3.5 w-3.5" />
+                )}
+                <span className="hidden sm:inline">Export Analysis</span>
+                <span className="sm:hidden">Export</span>
+              </Button>
+
+              <div className="flex bg-muted p-1 rounded-lg">
+                <button
+                  onClick={() => setTrendView("visual")}
+                  className={`flex items-center gap-1 px-2 py-1 rounded-md text-[10px] sm:text-xs font-medium transition-all ${
+                    trendView === "visual" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground"
+                  }`}
+                >
+                  <LayoutGrid className="h-3 w-3" />
+                  Trends
+                </button>
+                <button
+                  onClick={() => setTrendView("table")}
+                  className={`flex items-center gap-1 px-2 py-1 rounded-md text-[10px] sm:text-xs font-medium transition-all ${
+                    trendView === "table" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground"
+                  }`}
+                >
+                  <TableIcon className="h-3 w-3" />
+                  Comparison
+                </button>
+              </div>
+            </div>
+          </div>
+          
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={trendView}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.2 }}
+            >
+              {trendView === "visual" ? (
+                <TrendChart reports={completedReports} />
+              ) : (
+                <ComparisonTable reports={completedReports} />
+              )}
+            </motion.div>
+          </AnimatePresence>
         </div>
       )}
     </motion.div>

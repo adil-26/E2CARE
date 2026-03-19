@@ -9,71 +9,18 @@ import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   ReferenceArea, ReferenceLine,
 } from "recharts";
+import {
+  STATUS_COLORS,
+  STATUS_LABELS,
+  getAvailableTests,
+  buildTrendData,
+  getLatestTestValue
+} from "@/utils/healthDataUtils";
 
 interface TrendChartProps {
   reports: MedicalReport[];
 }
 
-const STATUS_COLORS: Record<string, string> = {
-  normal: "#22c55e",
-  high: "#ef4444",
-  low: "#ef4444",
-  critical: "#dc2626",
-  unknown: "#94a3b8",
-};
-
-const STATUS_LABELS: Record<string, string> = {
-  normal: "Normal", high: "High", low: "Low", critical: "Critical", unknown: "Unknown",
-};
-
-function getAvailableTests(reports: MedicalReport[]): string[] {
-  const testNames = new Set<string>();
-  reports.forEach((r) => {
-    const results = r.extracted_data?.test_results || [];
-    results.forEach((t: any) => {
-      if (t.test_name && t.value && !isNaN(parseFloat(t.value))) {
-        testNames.add(t.test_name);
-      }
-    });
-  });
-  return Array.from(testNames).sort();
-}
-
-function buildTrendData(reports: MedicalReport[], testName: string) {
-  const dataPoints: { date: string; value: number; refMin?: number; refMax?: number; status: string; fill: string }[] = [];
-  const sorted = [...reports].sort((a, b) => {
-    const da = a.report_date || a.created_at;
-    const db = b.report_date || b.created_at;
-    return new Date(da).getTime() - new Date(db).getTime();
-  });
-
-  sorted.forEach((r) => {
-    const results = r.extracted_data?.test_results || [];
-    const match = results.find((t: any) => t.test_name === testName);
-    if (match && !isNaN(parseFloat(match.value))) {
-      const date = r.report_date || r.created_at.split("T")[0];
-      let refMin: number | undefined;
-      let refMax: number | undefined;
-      if (match.reference_range) {
-        const rangeMatch = match.reference_range.match(/([\d.]+)\s*[-–]\s*([\d.]+)/);
-        if (rangeMatch) { refMin = parseFloat(rangeMatch[1]); refMax = parseFloat(rangeMatch[2]); }
-      }
-      const status = match.status || "unknown";
-      dataPoints.push({
-        date: new Date(date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "2-digit" }),
-        value: parseFloat(match.value),
-        refMin, refMax, status,
-        fill: STATUS_COLORS[status] || STATUS_COLORS.unknown,
-      });
-    }
-  });
-  return dataPoints;
-}
-
-function getLatestTestValue(reports: MedicalReport[], testName: string) {
-  const data = buildTrendData(reports, testName);
-  return data.length > 0 ? data[data.length - 1] : null;
-}
 
 function StatusDot(props: any) {
   const { cx, cy, payload } = props;
@@ -112,102 +59,16 @@ function MiniSparkline({ data }: { data: { value: number; fill: string }[] }) {
   );
 }
 
-const PrintableTrendRow = ({ testName, reports }: { testName: string; reports: MedicalReport[] }) => {
-  const latest = getLatestTestValue(reports, testName);
-  const trendData = buildTrendData(reports, testName);
-
-  return (
-    <div className="flex items-center gap-4 p-4 border-b border-gray-200 bg-white page-break-avoid">
-      <div className="w-1/4 space-y-1">
-        <h4 className="font-bold text-gray-900 text-sm">{testName}</h4>
-        <div className="flex items-baseline gap-2">
-          <span className="text-2xl font-bold text-gray-900">{latest?.value ?? "—"}</span>
-          <span className="text-xs text-gray-500">
-            {latest?.status && `(${STATUS_LABELS[latest.status] || latest.status})`}
-          </span>
-        </div>
-        {latest?.refMin != null && latest?.refMax != null && (
-          <p className="text-xs text-gray-500">Ref: {latest.refMin} – {latest.refMax}</p>
-        )}
-      </div>
-      <div className="w-3/4 h-32">
-        <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={trendData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
-            <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-            <XAxis dataKey="date" tick={{ fontSize: 9 }} tickLine={false} axisLine={false} />
-            <YAxis tick={{ fontSize: 9 }} tickLine={false} axisLine={false} width={30} />
-            <Line type="monotone" dataKey="value" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 3 }} />
-          </LineChart>
-        </ResponsiveContainer>
-      </div>
-    </div>
-  );
-};
-
 export default function TrendChart({ reports }: TrendChartProps) {
   const availableTests = useMemo(() => getAvailableTests(reports), [reports]);
   const [selectedTest, setSelectedTest] = useState<string | null>(null);
   const chartRef = useRef<HTMLDivElement>(null);
-  const overviewRef = useRef<HTMLDivElement>(null);
-  const fullReportRef = useRef<HTMLDivElement>(null);
 
-  const handleDownloadFullReport = async () => {
-    if (!fullReportRef.current) return;
+  const handleDownloadPdf = async () => {
+    if (!chartRef.current || !selectedTest) return;
 
     try {
-      const pdf = new jsPDF("p", "mm", "a4");
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = pdf.internal.pageSize.getHeight();
-
-      // Cover Page
-      pdf.setFontSize(24);
-      pdf.setTextColor(30, 41, 59);
-      pdf.text("Health Trends Report", 15, 40);
-
-      pdf.setFontSize(12);
-      pdf.setTextColor(100, 116, 139);
-      pdf.text(`Comprehensive analysis of ${reports.length} report${reports.length !== 1 ? 's' : ''}`, 15, 50);
-      pdf.text(`Generated on: ${new Date().toLocaleDateString()}`, 15, 56);
-
-      // Capture each row
-      const rows = fullReportRef.current.children;
-      let yOffset = 20;
-
-      pdf.addPage(); // Start content on new page
-
-      for (let i = 0; i < rows.length; i++) {
-        const row = rows[i] as HTMLElement;
-        const canvas = await html2canvas(row, {
-          scale: 2,
-          useCORS: true,
-          backgroundColor: "#ffffff",
-        });
-
-        const imgData = canvas.toDataURL("image/png");
-        const imgProps = pdf.getImageProperties(imgData);
-        const imgHeight = (imgProps.height * (pdfWidth - 20)) / imgProps.width;
-
-        // Check if we need a new page
-        if (yOffset + imgHeight > pdfHeight - 10) {
-          pdf.addPage();
-          yOffset = 20;
-        }
-
-        pdf.addImage(imgData, "PNG", 10, yOffset, pdfWidth - 20, imgHeight);
-        yOffset += imgHeight + 5; // Gap between charts
-      }
-
-      pdf.save("Health_Trends_Full_Report.pdf");
-    } catch (error) {
-      console.error("Error generating full report:", error);
-    }
-  };
-
-  const handleDownloadOverview = async () => {
-    if (!overviewRef.current) return;
-
-    try {
-      const canvas = await html2canvas(overviewRef.current, {
+      const canvas = await html2canvas(chartRef.current, {
         scale: 2,
         useCORS: true,
         backgroundColor: "#ffffff",
@@ -220,50 +81,12 @@ export default function TrendChart({ reports }: TrendChartProps) {
       const imgProps = pdf.getImageProperties(imgData);
       const imgHeight = (imgProps.height * (pdfWidth - 20)) / imgProps.width;
 
-      pdf.setFontSize(22);
-      pdf.setTextColor(30, 41, 59);
-      pdf.text("Health Trends", 10, 20);
-
-      pdf.setFontSize(12);
-      pdf.setTextColor(100, 116, 139);
-      pdf.text(`Tracking across ${reports.length} report${reports.length !== 1 ? 's' : ''}`, 10, 28);
-      pdf.text(`Generated on: ${new Date().toLocaleDateString()}`, 10, 34);
-
-      pdf.addImage(imgData, "PNG", 10, 45, pdfWidth - 20, imgHeight);
-
-      pdf.save("Health_Trends_Report.pdf");
-    } catch (error) {
-      console.error("Error generating overview PDF:", error);
-    }
-  };
-
-  const handleDownloadPdf = async () => {
-    if (!chartRef.current || !selectedTest) return;
-
-    try {
-      const canvas = await html2canvas(chartRef.current, {
-        scale: 2, // Higher quality
-        useCORS: true,
-        backgroundColor: "#ffffff",
-      });
-
-      const imgData = canvas.toDataURL("image/png");
-      const pdf = new jsPDF("p", "mm", "a4");
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = pdf.internal.pageSize.getHeight();
-
-      const imgProps = pdf.getImageProperties(imgData);
-      const imgHeight = (imgProps.height * (pdfWidth - 20)) / imgProps.width; // 10mm margin each side
-
-      // Header
       pdf.setFontSize(16);
       pdf.text(`${selectedTest} - Trend Report`, 10, 15);
       pdf.setFontSize(10);
       pdf.text(`Generated on: ${new Date().toLocaleDateString()}`, 10, 22);
 
-      // Image
       pdf.addImage(imgData, "PNG", 10, 30, pdfWidth - 20, imgHeight);
-
       pdf.save(`${selectedTest}_Trend_Report.pdf`);
     } catch (error) {
       console.error("Error generating PDF:", error);
@@ -291,19 +114,10 @@ export default function TrendChart({ reports }: TrendChartProps) {
   if (!selectedTest) {
     return (
       <div className="space-y-3">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between px-1">
           <p className="text-xs text-muted-foreground">Tap any test to see its full trend chart.</p>
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-8 gap-1.5 text-xs"
-            onClick={handleDownloadFullReport}
-          >
-            <Download className="h-3.5 w-3.5" />
-            Download Full Report
-          </Button>
         </div>
-        <div ref={overviewRef} className="grid grid-cols-2 gap-2 sm:grid-cols-3 p-1">
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 p-1">
           {availableTests.map((test) => {
             const latest = getLatestTestValue(reports, test);
             const sparkData = buildTrendData(reports, test);
@@ -331,13 +145,6 @@ export default function TrendChart({ reports }: TrendChartProps) {
               </button>
             );
           })}
-        </div>
-
-        {/* Hidden Container for Full Report Generation */}
-        <div className="absolute top-0 left-[-9999px] w-[800px] bg-white z-[-1]" ref={fullReportRef}>
-          {availableTests.map(test => (
-            <PrintableTrendRow key={test} testName={test} reports={reports} />
-          ))}
         </div>
       </div>
     );

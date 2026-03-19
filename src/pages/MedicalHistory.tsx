@@ -23,6 +23,11 @@ import FiveElementDiagnostic from "@/components/medical-history/FiveElementDiagn
 import FiveElementQuestionnaire from "@/components/medical-history/FiveElementQuestionnaire";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { HearOutButton } from "@/components/ui/HearOutButton";
+import { PatientProgressSummary } from "@/components/ayurveda/PatientProgressSummary";
+import { ActivitySquare } from "lucide-react";
+import { useFiveElementDiagnosis } from "@/hooks/useFiveElementDiagnosis";
+import { useVitals } from "@/hooks/useVitals";
+import { useMedications } from "@/hooks/useMedications";
 
 const STEPS = [
   { key: "birth_history", label: "Birth History", icon: "🍼" },
@@ -41,6 +46,8 @@ export default function MedicalHistory() {
   const { user } = useAuth();
   const { toast } = useToast();
   const { t } = useLanguage();
+  const { vitals } = useVitals();
+  const { medications } = useMedications();
 
   const [currentStep, setCurrentStep] = useState(0);
   const [localData, setLocalData] = useState<Record<string, Record<string, any>>>({});
@@ -48,7 +55,9 @@ export default function MedicalHistory() {
   const [patientName, setPatientName] = useState<string>("");
   const [hasInitialized, setHasInitialized] = useState(false);
   const [showCelebration, setShowCelebration] = useState(false);
-  const [activeTab, setActiveTab] = useState<"history" | "analysis" | "assessment">("history");
+  const [activeTab, setActiveTab] = useState<"history" | "analysis" | "assessment" | "acupressure">("history");
+
+  const diagnosis = useFiveElementDiagnosis(localData);
 
   useEffect(() => {
     if (!isLoading && history && !hasInitialized) {
@@ -158,7 +167,18 @@ export default function MedicalHistory() {
             variant="outline"
             size="sm"
             className="gap-1.5 text-xs"
-            onClick={async () => await generateMedicalHistoryPdf(history as any, patientName)}
+            onClick={async () => {
+              const pdfData = {
+                ...(history as any),
+                analysis: diagnosis,
+                clinical: {
+                  vitals: vitals.slice(0, 10),
+                  medications: medications.filter(m => m.is_active)
+                },
+                // Add any other section data if needed
+              };
+              await generateMedicalHistoryPdf(pdfData, patientName);
+            }}
             disabled={completionPercent === 0}
           >
             <Download className="h-3.5 w-3.5" /> {t.common.download} PDF
@@ -194,6 +214,15 @@ export default function MedicalHistory() {
           >
             <FlaskConical className="h-3.5 w-3.5" /> 五行 Analysis
           </button>
+          <button
+            onClick={() => setActiveTab("acupressure")}
+            className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-medium transition-colors ${activeTab === "acupressure"
+                ? "bg-orange-600 text-white shadow-sm"
+                : "bg-muted text-muted-foreground hover:bg-accent"
+              }`}
+          >
+            <ActivitySquare className="h-3.5 w-3.5" /> Acupressure
+          </button>
         </div>
 
         {/* Mobile nav on top — hidden on desktop (sidebar shows instead) */}
@@ -220,6 +249,20 @@ export default function MedicalHistory() {
         {activeTab === "analysis" && (
           <div className="max-w-2xl">
             <FiveElementDiagnostic history={localData} />
+          </div>
+        )}
+
+        {/* Ayurvedic Acupressure tab */}
+        {activeTab === "acupressure" && (
+          <div className="max-w-4xl">
+            {/* In a real app we'd fetch the patient's case data from Supabase. We show an empty state for now */}
+            <PatientProgressSummary 
+              caseData={null as any} 
+              latestVisit={null} 
+              symptoms={[]} 
+              formulas={[]} 
+              diagrams={[]} 
+            />
           </div>
         )}
 

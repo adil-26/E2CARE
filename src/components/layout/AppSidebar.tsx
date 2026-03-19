@@ -17,6 +17,7 @@ import {
   LogOut,
   Heart,
   Stethoscope,
+  Scale,
 } from "lucide-react";
 import {
   Sidebar,
@@ -48,6 +49,7 @@ export default function AppSidebar() {
     { title: t.nav.appointments, icon: Calendar, path: "/appointments" },
     { title: t.nav.messages, icon: MessageSquare, path: "/messages" },
     { title: t.nav.aiChat, icon: Bot, path: "/chat" },
+    { title: t.nav.comparison, icon: Scale, path: "/comparison" },
   ];
 
   const moreNavItems = [
