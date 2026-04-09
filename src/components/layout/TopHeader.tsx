@@ -3,6 +3,7 @@ import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import NotificationBell from "@/components/notifications/NotificationBell";
+import GlobalSearch from "@/components/layout/GlobalSearch";
 import { useProfilePhoto } from "@/hooks/useProfilePhoto";
 import { useLanguage } from "@/contexts/LanguageContext";
 
@@ -33,13 +34,7 @@ export default function TopHeader() {
 
       <div className="flex items-center gap-2">
         <div className="hidden md:block">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              placeholder={`${t.common.search}...`}
-              className="w-64 pl-10 bg-muted/50 border-none"
-            />
-          </div>
+          <GlobalSearch />
         </div>
         <NotificationBell />
         <Avatar className="h-9 w-9 rounded-full lg:hidden">

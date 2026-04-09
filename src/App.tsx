@@ -11,6 +11,7 @@ import RoleRedirect from "@/components/RoleRedirect";
 import AppLayout from "@/components/layout/AppLayout";
 import DoctorLayout from "@/components/layout/DoctorLayout";
 import AdminLayout from "@/components/layout/AdminLayout";
+import StartupGreeting from "@/components/layout/StartupGreeting";
 
 // Auth pages
 import AuthRoleSelect from "@/pages/auth/AuthRoleSelect";
@@ -65,6 +66,7 @@ const App = () => (
       <BrowserRouter>
         <AuthProvider>
           <LanguageProvider>
+            <StartupGreeting />
             <Routes>
               {/* Auth routes */}
               <Route path="/auth" element={<AuthRoleSelect />} />

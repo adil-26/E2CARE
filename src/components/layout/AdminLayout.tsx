@@ -2,6 +2,7 @@ import { Outlet } from "react-router-dom";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import AdminSidebar from "./AdminSidebar";
 import NotificationBell from "@/components/notifications/NotificationBell";
+import GlobalSearch from "@/components/layout/GlobalSearch";
 
 export default function AdminLayout() {
   return (
@@ -12,9 +13,12 @@ export default function AdminLayout() {
           <header className="flex h-16 items-center justify-between border-b border-border bg-card px-4 lg:px-6">
             <div className="flex items-center gap-3">
               <SidebarTrigger />
-              <h1 className="font-display text-lg font-semibold text-foreground">Admin Panel</h1>
+              <h1 className="font-display text-lg font-semibold text-foreground hidden sm:block">Admin Panel</h1>
             </div>
-            <NotificationBell />
+            <div className="flex items-center gap-3 w-full justify-end sm:w-auto">
+              <GlobalSearch />
+              <NotificationBell />
+            </div>
           </header>
           <main className="flex-1 overflow-auto p-4 lg:p-6">
             <Outlet />
