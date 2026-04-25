@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">E2Care</string>
+    <string name="title_activity_main">E2Care</string>
+    <string name="package_name">com.e2care.healthcompass</string>
+    <string name="custom_url_scheme">com.e2care.healthcompass</string>
+</resources>
