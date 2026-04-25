@@ -275,7 +275,7 @@ export function useMedicalReports() {
       if (!user) throw new Error("Not authenticated");
       const { data, error } = await supabase
         .from("medical_reports")
-        .update({ review_status: reviewStatus, doctor_notes: doctorNotes })
+        .update({ review_status: reviewStatus, doctor_notes: doctorNotes } as any)
         .eq("id", id)
         .select()
         .single();
