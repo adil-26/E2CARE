@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { ChevronLeft, Calendar, FileText, AlertTriangle, CheckCircle2, Download } from "lucide-react";
+import { ChevronLeft, Calendar, FileText, AlertTriangle, CheckCircle2, Download, ExternalLink, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -35,7 +35,7 @@ const statusBadgeClasses: Record<string, string> = {
 
 export default function ReportDetail({ report, onBack }: ReportDetailProps) {
   const { role } = useRole();
-  const { updateReportReview } = useMedicalReports();
+  const { updateReportReview, deleteReport } = useMedicalReports();
   
   const [reviewStatus, setReviewStatus] = useState<'pending'|'reviewed'|'requires_action'>(report.review_status || 'pending');
   const [doctorNotes, setDoctorNotes] = useState(report.doctor_notes || '');
@@ -64,20 +64,46 @@ export default function ReportDetail({ report, onBack }: ReportDetailProps) {
       className="space-y-4 overflow-x-hidden"
     >
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <Button variant="ghost" size="sm" onClick={onBack} className="gap-1 text-xs">
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <Button variant="ghost" size="sm" onClick={onBack} className="gap-1 text-xs px-2 shrink-0">
           <ChevronLeft className="h-4 w-4" /> Back
         </Button>
-        {report.status === "completed" && (
+        <div className="flex items-center gap-2 flex-wrap">
           <Button
             variant="outline"
             size="sm"
-            className="gap-1.5 text-xs"
-            onClick={async () => await generateReportPdf(report)}
+            className="gap-1.5 text-xs text-rose-600 border-rose-200 hover:bg-rose-50"
+            disabled={deleteReport.isPending}
+            onClick={() => {
+               if(window.confirm("Are you sure you want to permanently delete this report and its document?")) {
+                 deleteReport.mutate(report.id, { onSuccess: () => onBack() });
+               }
+            }}
           >
-            <Download className="h-3.5 w-3.5" /> Download PDF
+            <Trash2 className="h-3.5 w-3.5" /> {deleteReport.isPending ? "Deleting..." : "Delete"}
           </Button>
-        )}
+
+          {report.file_url && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5 text-xs text-blue-600 border-blue-200 hover:bg-blue-50 bg-white"
+              onClick={() => window.open(report.file_url, '_blank')}
+            >
+              <ExternalLink className="h-3.5 w-3.5" /> View Original
+            </Button>
+          )}
+          {report.status === "completed" && (
+            <Button
+              variant="default"
+              size="sm"
+              className="gap-1.5 text-xs bg-teal-600 hover:bg-teal-700 text-white shadow-sm"
+              onClick={async () => await generateReportPdf(report)}
+            >
+              <Download className="h-3.5 w-3.5" /> AI Report
+            </Button>
+          )}
+        </div>
       </div>
 
       <div>

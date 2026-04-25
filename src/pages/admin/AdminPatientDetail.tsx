@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import {
   ArrowLeft, Pill, FileText, Activity, Heart, Droplets,
   TrendingUp, Thermometer, Wind, Phone, MapPin, Calendar,
-  User, Shield,
+  User, Shield, Trash2, Loader2,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,10 +11,12 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
-import { useQuery } from "@tanstack/react-query";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import PatientMedicalHistory from "@/components/doctor/PatientMedicalHistory";
 import { format } from "date-fns";
+import { useToast } from "@/hooks/use-toast";
 
 function useAdminPatientData(userId?: string) {
   return useQuery({
@@ -54,6 +56,63 @@ export default function AdminPatientDetail() {
   const { patientId } = useParams<{ patientId: string }>();
   const navigate = useNavigate();
   const { data: patientData, isLoading } = useAdminPatientData(patientId);
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  const deleteReport = useMutation({
+    mutationFn: async (reportId: string) => {
+      try {
+        const { data: reportToDel } = await supabase.from("medical_reports").select("file_url").eq("id", reportId).single();
+        if (reportToDel && reportToDel.file_url) {
+          const filePath = reportToDel.file_url.includes("/") 
+            ? reportToDel.file_url.split("medical-reports/")[1]?.split("?")[0] 
+            : reportToDel.file_url;
+          if (filePath) {
+            await supabase.storage.from("medical-reports").remove([filePath]);
+          }
+        }
+      } catch (err) {
+        console.warn("Storage cleanup failed:", err);
+      }
+      const { error } = await supabase.from("medical_reports").delete().eq("id", reportId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin_patient_detail", patientId] });
+      toast({ title: "Deleted", description: "Report successfully removed." });
+    },
+    onError: (err) => {
+      toast({ title: "Delete Failed", description: err.message, variant: "destructive" });
+    },
+  });
+
+  const deleteAllReports = useMutation({
+    mutationFn: async () => {
+      if (!patientId) return;
+      try {
+        const { data: reportsToDel } = await supabase.from("medical_reports").select("file_url").eq("user_id", patientId);
+        if (reportsToDel && reportsToDel.length > 0) {
+          const filePaths = reportsToDel
+            .map(r => r.file_url.includes("/") ? r.file_url.split("medical-reports/")[1]?.split("?")[0] : r.file_url)
+            .filter(Boolean);
+          if (filePaths.length > 0) {
+            await supabase.storage.from("medical-reports").remove(filePaths as string[]);
+          }
+        }
+      } catch (err) {
+        console.warn("Storage cleanup failed during bulk deletion:", err);
+      }
+      const { error } = await supabase.from("medical_reports").delete().eq("user_id", patientId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin_patient_detail", patientId] });
+      toast({ title: "Deleted All", description: "All reports for this patient have been removed." });
+    },
+    onError: (err) => {
+      toast({ title: "Bulk Delete Failed", description: err.message, variant: "destructive" });
+    },
+  });
 
   if (isLoading) {
     return <div className="flex items-center justify-center py-16 text-muted-foreground">Loading patient data...</div>;
@@ -220,21 +279,56 @@ export default function AdminPatientDetail() {
 
         {/* Reports */}
         <TabsContent value="reports" className="space-y-2 pt-3">
+          <div className="flex justify-end mb-2">
+            {reports.length > 0 && (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="outline" size="sm" className="gap-1.5 text-xs text-destructive hover:text-destructive">
+                    <Trash2 className="h-3.5 w-3.5" /> Delete All Reports
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete All Reports</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Are you sure you want to delete all reports for this patient? This action cannot be undone and will permanently remove all associated scraped data and files.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={() => deleteAllReports.mutate()} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                      {deleteAllReports.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                      Yes, Delete All
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
+          </div>
           {reports.length === 0 ? (
             <p className="py-6 text-center text-sm text-muted-foreground">No reports uploaded</p>
           ) : (
             reports.map((r: any) => (
-              <Card key={r.id} className="shadow-sm">
+              <Card key={r.id} className="shadow-sm relative group">
                 <CardContent className="flex items-center gap-3 p-4">
                   <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-secondary/10">
                     <FileText className="h-5 w-5 text-secondary" />
                   </div>
-                  <div className="flex-1">
+                  <div className="flex-1 pr-8">
                     <p className="font-medium text-foreground">{r.title}</p>
                     <p className="text-xs text-muted-foreground">{r.report_type} • {r.report_date || "No date"}</p>
                     {r.ai_summary && <p className="mt-1 text-xs text-muted-foreground line-clamp-2">{r.ai_summary}</p>}
                   </div>
                   <Badge variant="secondary">{r.status}</Badge>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="absolute top-2 right-2 h-8 w-8 text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+                    onClick={() => deleteReport.mutate(r.id)}
+                    disabled={deleteReport.isPending}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
                 </CardContent>
               </Card>
             ))

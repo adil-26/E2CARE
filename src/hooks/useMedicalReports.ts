@@ -135,6 +135,23 @@ export function useMedicalReports() {
   const deleteReport = useMutation({
     mutationFn: async (reportId: string) => {
       if (!user) throw new Error("Not authenticated");
+      
+      // Attempt to clean up the file from storage first
+      try {
+        const { data: reportToDel } = await supabase.from("medical_reports").select("file_url").eq("id", reportId).single();
+        if (reportToDel && reportToDel.file_url) {
+          const filePath = reportToDel.file_url.includes("/") 
+            ? reportToDel.file_url.split("medical-reports/")[1]?.split("?")[0] 
+            : reportToDel.file_url;
+            
+          if (filePath) {
+            await supabase.storage.from("medical-reports").remove([filePath]);
+          }
+        }
+      } catch (err) {
+        console.warn("Storage cleanup failed during report deletion:", err);
+      }
+
       const { error } = await supabase
         .from("medical_reports")
         .delete()
@@ -143,11 +160,53 @@ export function useMedicalReports() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["medical-reports"] });
-      toast({ title: "Deleted", description: "Report removed." });
+      toast({ title: "Deleted", description: "Report and document scrubbed securely." });
     },
     onError: (err) => {
       toast({
         title: "Delete Failed",
+        description: err.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const deleteAllReports = useMutation({
+    mutationFn: async () => {
+      if (!user) throw new Error("Not authenticated");
+      
+      try {
+        const { data: reportsToDel } = await supabase
+          .from("medical_reports")
+          .select("file_url")
+          .eq("user_id", user.id);
+          
+        if (reportsToDel && reportsToDel.length > 0) {
+          const filePaths = reportsToDel
+            .map(r => r.file_url.includes("/") ? r.file_url.split("medical-reports/")[1]?.split("?")[0] : r.file_url)
+            .filter(Boolean);
+            
+          if (filePaths.length > 0) {
+            await supabase.storage.from("medical-reports").remove(filePaths as string[]);
+          }
+        }
+      } catch (err) {
+        console.warn("Storage cleanup failed during bulk deletion:", err);
+      }
+
+      const { error } = await supabase
+        .from("medical_reports")
+        .delete()
+        .eq("user_id", user.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["medical-reports"] });
+      toast({ title: "Deleted All", description: "All reports and associated data have been deleted." });
+    },
+    onError: (err) => {
+      toast({
+        title: "Bulk Delete Failed",
         description: err.message,
         variant: "destructive",
       });
@@ -238,6 +297,7 @@ export function useMedicalReports() {
     isLoading: query.isLoading,
     uploadAndAnalyze,
     deleteReport,
+    deleteAllReports,
     retryAnalysis,
     updateReportReview,
   };

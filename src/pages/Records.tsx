@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { useMedicalReports, MedicalReport } from "@/hooks/useMedicalReports";
 import ReportDetail from "@/components/records/ReportDetail";
@@ -32,7 +33,7 @@ const statusColors: Record<string, string> = {
 };
 
 export default function Records() {
-  const { reports, isLoading, uploadAndAnalyze, deleteReport, retryAnalysis } = useMedicalReports();
+  const { reports, isLoading, uploadAndAnalyze, deleteReport, deleteAllReports, retryAnalysis } = useMedicalReports();
   const { toast } = useToast();
   const [showUpload, setShowUpload] = useState(false);
   const [selectedReport, setSelectedReport] = useState<MedicalReport | null>(null);
@@ -121,6 +122,31 @@ export default function Records() {
       <div className="flex items-center justify-between">
         <h2 className="font-display text-lg sm:text-xl font-bold text-foreground">Reports & Records</h2>
         <div className="flex gap-2">
+          {reports.length > 0 && (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="outline" size="sm" className="gap-1.5 text-xs sm:text-sm text-destructive hover:text-destructive">
+                  <Trash2 className="h-3.5 w-3.5" />
+                  <span className="hidden sm:inline">Delete All</span>
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Delete All Reports</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Are you sure you want to delete all reports? This action cannot be undone and will permanently remove all associated scraped data and files.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={() => deleteAllReports.mutate()} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                    {deleteAllReports.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                    Yes, Delete All
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
           <Dialog open={showUpload} onOpenChange={setShowUpload}>
             <DialogTrigger asChild>
               <Button size="sm" className="gap-1.5 text-xs sm:text-sm">

@@ -73,8 +73,28 @@ export const downloadComparisonReport = async (reports: MedicalReport[]) => {
       comparisonItems.filter(i => i.category === category).forEach(item => {
         const row = [
           `${item.name}${item.unit ? ` (${item.unit})` : ""}${item.reference_range ? `\nRef: ${item.reference_range}` : ""}`,
-          ...item.values.map(v => v ? v.value : "—"),
-          item.change === "initial" ? "Initial" : (item.percentChange ? `${parseFloat(item.percentChange) > 0 ? '+' : ''}${item.percentChange}%` : item.change),
+          ...item.values.map(v => {
+            if (!v) return "—";
+            let textColor: [number, number, number] = [30, 41, 59]; // Default text color
+            if (v.status === 'normal') textColor = [22, 163, 74]; // green-600
+            else if (v.status === 'high' || v.status === 'critical') textColor = [220, 38, 38]; // red-600
+            else if (v.status === 'low') textColor = [37, 99, 235]; // blue-600
+
+            return { 
+              content: v.value, 
+              styles: { 
+                textColor, 
+                fontStyle: (v.status === 'critical' || v.status !== 'normal') ? 'bold' : 'normal' 
+              } 
+            };
+          }),
+          {
+            content: item.change === "initial" ? "Initial" : (item.percentChange ? `${parseFloat(item.percentChange) > 0 ? '+' : ''}${item.percentChange}%` : item.change.charAt(0).toUpperCase() + item.change.slice(1)),
+            styles: {
+              textColor: item.change === 'rising' ? [220, 38, 38] : item.change === 'dropping' ? [22, 163, 74] : item.change === 'stable' ? [148, 163, 184] : [37, 99, 235],
+              fontStyle: 'bold'
+            }
+          },
           item.interpretation
         ];
         body.push(row);
