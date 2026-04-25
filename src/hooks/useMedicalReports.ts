@@ -152,11 +152,15 @@ export function useMedicalReports() {
         console.warn("Storage cleanup failed during report deletion:", err);
       }
 
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from("medical_reports")
         .delete()
-        .eq("id", reportId);
+        .eq("id", reportId)
+        .select("id");
       if (error) throw error;
+      if (data && data.length === 0) {
+        throw new Error("Deletion blocked by Supabase RLS Policy. Please enable DELETE permissions for medical_reports.");
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["medical-reports"] });
@@ -194,11 +198,15 @@ export function useMedicalReports() {
         console.warn("Storage cleanup failed during bulk deletion:", err);
       }
 
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from("medical_reports")
         .delete()
-        .eq("user_id", user.id);
+        .eq("user_id", user.id)
+        .select("id");
       if (error) throw error;
+      if (data && data.length === 0) {
+        throw new Error("Deletion blocked by Supabase RLS Policy. Please enable DELETE permissions for medical_reports.");
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["medical-reports"] });
