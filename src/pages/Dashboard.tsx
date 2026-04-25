@@ -16,6 +16,7 @@ import {
   Wind,
   Bot,
   Gift,
+  Leaf,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -24,10 +25,12 @@ import ProfileCompletionMeter from "@/components/dashboard/ProfileCompletionMete
 import VitalCard from "@/components/dashboard/VitalCard";
 import DailyRoutineTracker from "@/components/dashboard/DailyRoutineTracker";
 import MedicineReminder from "@/components/dashboard/MedicineReminder";
+import { ClinicalAlertsWidget } from "@/components/doctor/ClinicalAlertsWidget";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { HearOutButton } from "@/components/ui/HearOutButton";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { IdCardDialog } from "@/components/patient/IdCardDialog";
 
 const container = {
   hidden: { opacity: 0 },
@@ -63,7 +66,7 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const { latestVitals, addVital } = useVitals();
   const { routine, upsertRoutine } = useDailyRoutine();
-  const { medications, addMedication } = useMedications();
+  const { medications, addMedication, logMedicine } = useMedications();
   const { t } = useLanguage();
 
   const { data: profile } = useQuery({
@@ -71,7 +74,7 @@ export default function Dashboard() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("profiles")
-        .select("full_name")
+        .select("*")
         .eq("user_id", user?.id)
         .maybeSingle();
       if (error) throw error;
@@ -94,6 +97,13 @@ export default function Dashboard() {
 
   return (
     <motion.div variants={container} initial="hidden" animate="show" className="space-y-6">
+      {/* Top Banner Alerts */}
+      {user?.id && (
+        <motion.div variants={item}>
+          <ClinicalAlertsWidget patientId={user.id} />
+        </motion.div>
+      )}
+
       {/* Health Status + Score */}
       <motion.div variants={item}>
         <div className="mb-4 flex items-center justify-between">
@@ -133,20 +143,34 @@ export default function Dashboard() {
           {[
             { label: t.nav.appointments, icon: Calendar, path: "/appointments" },
             { label: t.common.upload, icon: Upload, path: "/records" },
-            { label: "ID Card", icon: QrCode, path: "/emergency" },
+            { label: "ID Card", icon: QrCode, isIdCard: true },
+            { label: "Plans", icon: Leaf, path: "/treatments" },
             { label: t.nav.aiChat, icon: Bot, path: "/chat" },
-            { label: t.nav.referrals, icon: Gift, path: "/referrals" },
-          ].map((action) => (
-            <Button
-              key={action.label}
-              variant="outline"
-              className="h-auto flex-col gap-1.5 py-3 shadow-sm px-1"
-              onClick={() => navigate(action.path)}
-            >
-              <action.icon className="h-5 w-5 text-primary" />
-              <span className="text-[10px] font-medium leading-tight text-center">{action.label}</span>
-            </Button>
-          ))}
+          ].map((action) => {
+            const btn = (
+              <Button
+                key={action.label}
+                variant="outline"
+                className="h-auto flex-col gap-1.5 py-3 shadow-sm px-1 w-full"
+                onClick={() => action.path && navigate(action.path)}
+              >
+                <action.icon className="h-5 w-5 text-primary" />
+                <span className="text-[10px] font-medium leading-tight text-center">{action.label}</span>
+              </Button>
+            );
+
+            if (action.isIdCard && profile && user) {
+              return (
+                <IdCardDialog 
+                  key={action.label}
+                  patient={{...profile, avatar_url: user?.user_metadata?.avatar_url}} 
+                  patientId={user.id} 
+                  trigger={btn} 
+                />
+              );
+            }
+            return btn;
+          })}
         </div>
       </motion.div>
 
@@ -191,6 +215,8 @@ export default function Dashboard() {
           medications={medications}
           onAdd={(med) => addMedication.mutate(med)}
           isAdding={addMedication.isPending}
+          onLog={(medId) => logMedicine.mutate({ medId })}
+          isLogging={logMedicine.isPending}
         />
       </motion.div>
 

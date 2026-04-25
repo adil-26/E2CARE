@@ -72,7 +72,7 @@ export const downloadComparisonReport = async (reports: MedicalReport[]) => {
 
       comparisonItems.filter(i => i.category === category).forEach(item => {
         const row = [
-          `${item.name}${item.unit ? ` (${item.unit})` : ""}`,
+          `${item.name}${item.unit ? ` (${item.unit})` : ""}${item.reference_range ? `\nRef: ${item.reference_range}` : ""}`,
           ...item.values.map(v => v ? v.value : "—"),
           item.change === "initial" ? "Initial" : (item.percentChange ? `${parseFloat(item.percentChange) > 0 ? '+' : ''}${item.percentChange}%` : item.change),
           item.interpretation

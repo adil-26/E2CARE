@@ -15,6 +15,8 @@ export interface MedicalReport {
   status: string;
   extracted_data: any;
   ai_summary: string | null;
+  review_status: 'pending' | 'reviewed' | 'requires_action';
+  doctor_notes: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -201,11 +203,42 @@ export function useMedicalReports() {
     },
   });
 
+  const updateReportReview = useMutation({
+    mutationFn: async ({
+      id,
+      reviewStatus,
+      doctorNotes,
+    }: {
+      id: string;
+      reviewStatus: 'pending' | 'reviewed' | 'requires_action';
+      doctorNotes: string | null;
+    }) => {
+      if (!user) throw new Error("Not authenticated");
+      const { data, error } = await supabase
+        .from("medical_reports")
+        .update({ review_status: reviewStatus, doctor_notes: doctorNotes })
+        .eq("id", id)
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["medical-reports"] });
+      toast({ title: "Review Saved", description: "The lab report review status was updated." });
+    },
+    onError: (err) => {
+      toast({ title: "Update Failed", description: err.message, variant: "destructive" });
+    },
+  });
+
   return {
     reports: query.data || [],
     isLoading: query.isLoading,
     uploadAndAnalyze,
     deleteReport,
     retryAnalysis,
+    updateReportReview,
   };
 }

@@ -104,6 +104,7 @@ export default function ComparisonTable({ reports }: ComparisonTableProps) {
                     <td className="p-4 py-3 text-xs font-medium text-foreground sticky left-0 bg-card z-10 border-r border-border/30">
                       {item.name}
                       {item.unit && <span className="block text-[10px] text-muted-foreground font-normal mt-0.5">{item.unit}</span>}
+                      {item.reference_range && <span className="block text-[9px] text-muted-foreground font-normal mt-1 opacity-75">Ref: {item.reference_range}</span>}
                     </td>
                     {item.values.map((v, idx) => (
                       <td key={idx} className="p-4 py-3 text-center">

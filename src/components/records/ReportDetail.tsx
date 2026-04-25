@@ -3,8 +3,13 @@ import { ChevronLeft, Calendar, FileText, AlertTriangle, CheckCircle2, Download 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { MedicalReport } from "@/hooks/useMedicalReports";
+import { MedicalReport, useMedicalReports } from "@/hooks/useMedicalReports";
 import { generateReportPdf } from "@/utils/generateReportPdf";
+import { useRole } from "@/hooks/useRole";
+import { useState } from "react";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Loader2, Stethoscope } from "lucide-react";
 
 interface ReportDetailProps {
   report: MedicalReport;
@@ -20,14 +25,21 @@ const statusIcons: Record<string, string> = {
 };
 
 const statusBadgeClasses: Record<string, string> = {
-  normal: "bg-green-100 text-green-700 border-green-200",
-  high: "bg-red-100 text-red-700 border-red-200",
-  low: "bg-blue-100 text-blue-700 border-blue-200",
-  critical: "bg-red-200 text-red-800 border-red-300",
+  normal: "bg-[#4ab896] hover:bg-[#4ab896] text-white border-transparent",
+  high: "bg-[#e53e3e] hover:bg-[#e53e3e] text-white border-transparent",
+  low: "bg-[#3182ce] hover:bg-[#3182ce] text-white border-transparent",
+  attention: "bg-[#e53e3e] hover:bg-[#e53e3e] text-white border-transparent",
+  critical: "bg-[#e53e3e] hover:bg-[#e53e3e] text-white border-transparent",
   unknown: "bg-muted text-muted-foreground",
 };
 
 export default function ReportDetail({ report, onBack }: ReportDetailProps) {
+  const { role } = useRole();
+  const { updateReportReview } = useMedicalReports();
+  
+  const [reviewStatus, setReviewStatus] = useState<'pending'|'reviewed'|'requires_action'>(report.review_status || 'pending');
+  const [doctorNotes, setDoctorNotes] = useState(report.doctor_notes || '');
+
   const data = report.extracted_data || {};
   const testResults = data.test_results || [];
   const medications = data.medications || [];
@@ -133,47 +145,43 @@ export default function ReportDetail({ report, onBack }: ReportDetailProps) {
 
       {/* Test Results by Category */}
       {Object.entries(groupedTests).map(([category, tests]) => (
-        <Card key={category} className="shadow-sm">
-          <CardContent className="p-3 sm:p-4">
-            <h4 className="font-semibold text-sm mb-3 text-foreground">{category}</h4>
-            <div className="space-y-2">
-              {(tests as any[]).map((test: any, i: number) => (
-                <div
-                  key={i}
-                  className="flex items-center justify-between gap-2 py-1.5 border-b border-border/40 last:border-0"
-                >
-                  <div className="flex items-center gap-1.5 min-w-0 flex-1">
-                    <span className="text-xs">{statusIcons[test.status] || "❓"}</span>
-                    <span className="text-xs sm:text-sm text-foreground truncate">{test.test_name}</span>
-                  </div>
-                  <div className="flex items-center gap-2 flex-shrink-0">
-                    <span className="font-semibold text-xs sm:text-sm text-foreground">
+        <div key={category} className="space-y-3">
+          <h4 className="font-semibold text-sm text-muted-foreground">{category}</h4>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {(tests as any[]).map((test: any, i: number) => (
+              <Card key={i} className="shadow-sm hover:shadow transition-shadow">
+                <CardContent className="p-4 sm:p-5 flex flex-col h-full">
+                  <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider mb-2">
+                    {test.test_name}
+                  </span>
+                  <div className="flex items-baseline gap-1.5 mb-4">
+                    <span className="text-2xl font-bold text-foreground">
                       {test.value}
-                      {test.unit && <span className="font-normal text-muted-foreground ml-0.5">{test.unit}</span>}
                     </span>
-                    <Badge variant="outline" className={`text-[8px] sm:text-[9px] ${statusBadgeClasses[test.status]}`}>
+                    {test.unit && (
+                      <span className="text-[13px] font-medium text-muted-foreground">
+                        {test.unit}
+                      </span>
+                    )}
+                  </div>
+                  <div className="mt-auto flex justify-between items-end gap-2">
+                    <Badge 
+                      variant="outline" 
+                      className={`text-[10px] px-2.5 py-0.5 rounded-full font-medium border-0 capitalize ${statusBadgeClasses[test.status?.toLowerCase()] || statusBadgeClasses.unknown}`}
+                    >
                       {test.status}
                     </Badge>
+                    {test.reference_range && (
+                      <span className="text-[9px] text-muted-foreground/70 text-right leading-tight max-w-[50%]">
+                        Ref: {test.reference_range}
+                      </span>
+                    )}
                   </div>
-                </div>
-              ))}
-            </div>
-            {(tests as any[]).some((t: any) => t.reference_range) && (
-              <div className="mt-2 pt-2 border-t border-border/40">
-                <p className="text-[10px] text-muted-foreground font-medium mb-1">Reference Ranges</p>
-                <div className="space-y-0.5">
-                  {(tests as any[])
-                    .filter((t: any) => t.reference_range)
-                    .map((t: any, i: number) => (
-                      <p key={i} className="text-[10px] text-muted-foreground">
-                        {t.test_name}: {t.reference_range}
-                      </p>
-                    ))}
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
       ))}
 
       {/* Medications */}
@@ -227,6 +235,58 @@ export default function ReportDetail({ report, onBack }: ReportDetailProps) {
             <p className="text-sm text-muted-foreground">
               No structured data was extracted. The report may be in an unsupported format.
             </p>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Doctor Review Panel (Only visible to Doctors/Admins) */}
+      {(role === 'doctor' || role === 'admin') && (
+        <Card className="mt-6 border-primary/40 shadow-sm relative overflow-hidden">
+          <div className="absolute top-0 left-0 w-1.5 h-full bg-primary/80"></div>
+          <CardContent className="p-4 sm:p-5 space-y-4">
+            <h3 className="font-semibold text-foreground flex items-center gap-2">
+              <Stethoscope className="w-5 h-5 text-primary" />
+              Doctor Annotation & Review
+            </h3>
+            
+            <div className="space-y-3">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                <div className="space-y-1 w-full sm:w-1/3">
+                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Status</label>
+                  <Select value={reviewStatus} onValueChange={(val: any) => setReviewStatus(val)}>
+                    <SelectTrigger className="w-full h-9">
+                      <SelectValue placeholder="Status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="pending">Pending Review</SelectItem>
+                      <SelectItem value="reviewed">Reviewed (Normal)</SelectItem>
+                      <SelectItem value="requires_action">Requires Action</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="w-full flex-1 pt-0 sm:pt-4">
+                  <Button 
+                    className="w-full sm:w-auto mt-1 sm:mt-0 px-8" 
+                    disabled={updateReportReview.isPending}
+                    onClick={() => updateReportReview.mutate({ id: report.id, reviewStatus, doctorNotes })}
+                  >
+                    {updateReportReview.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CheckCircle2 className="w-4 h-4 mr-2" />}
+                    Save Review
+                  </Button>
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Clinical Notes (Visible to Patient)</label>
+                <Textarea 
+                  placeholder="Review notes, follow-up instructions, or interpretations..." 
+                  className="resize-y min-h-[100px] text-sm"
+                  value={doctorNotes}
+                  onChange={(e) => setDoctorNotes(e.target.value)}
+                />
+              </div>
+            </div>
           </CardContent>
         </Card>
       )}

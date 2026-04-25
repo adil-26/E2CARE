@@ -8,9 +8,14 @@ import ComparisonTable from "@/components/records/ComparisonTable";
 import { useNavigate } from "react-router-dom";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { downloadComparisonReport } from "@/utils/reportExportUtils";
+import { useVitals } from "@/hooks/useVitals";
+import { useMedications } from "@/hooks/useMedications";
+import { ClinicalTrendsGraph } from "@/components/doctor/ClinicalTrendsGraph";
 
 export default function ComparisonAnalysis() {
   const { reports, isLoading } = useMedicalReports();
+  const { vitals, isLoading: vitalsLoading } = useVitals();
+  const { medications, isLoading: medsLoading } = useMedications();
   const [isExporting, setIsExporting] = useState(false);
   const navigate = useNavigate();
   const { t } = useLanguage();
@@ -75,6 +80,11 @@ export default function ComparisonAnalysis() {
           </Button>
         </div>
       </div>
+
+      {/* Clinical Trends Overlay */}
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.1 }}>
+        <ClinicalTrendsGraph vitals={vitals} medications={medications} />
+      </motion.div>
 
       {/* Insights Section */}
       {completedReports.length > 1 && (

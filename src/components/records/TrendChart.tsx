@@ -61,14 +61,16 @@ function MiniSparkline({ data }: { data: { value: number; fill: string }[] }) {
 
 export default function TrendChart({ reports }: TrendChartProps) {
   const availableTests = useMemo(() => getAvailableTests(reports), [reports]);
-  const [selectedTest, setSelectedTest] = useState<string | null>(null);
-  const chartRef = useRef<HTMLDivElement>(null);
+  const [isDownloading, setIsDownloading] = useState(false);
+  const chartWrapperRef = useRef<HTMLDivElement>(null);
 
+  // Download PDF logic for all trends
   const handleDownloadPdf = async () => {
-    if (!chartRef.current || !selectedTest) return;
-
+    if (!chartWrapperRef.current) return;
+    
+    setIsDownloading(true);
     try {
-      const canvas = await html2canvas(chartRef.current, {
+      const canvas = await html2canvas(chartWrapperRef.current, {
         scale: 2,
         useCORS: true,
         backgroundColor: "#ffffff",
@@ -76,29 +78,46 @@ export default function TrendChart({ reports }: TrendChartProps) {
 
       const imgData = canvas.toDataURL("image/png");
       const pdf = new jsPDF("p", "mm", "a4");
+      
       const pdfWidth = pdf.internal.pageSize.getWidth();
-
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      
       const imgProps = pdf.getImageProperties(imgData);
       const imgHeight = (imgProps.height * (pdfWidth - 20)) / imgProps.width;
 
+      let topPadding = 30; // padding for title
+      let position = topPadding;
+      
       pdf.setFontSize(16);
-      pdf.text(`${selectedTest} - Trend Report`, 10, 15);
+      pdf.text(`Patient Health Trends Report`, 10, 15);
       pdf.setFontSize(10);
-      pdf.text(`Generated on: ${new Date().toLocaleDateString()}`, 10, 22);
+      pdf.text(`Generated on: ${new Date().toLocaleDateString()} | Confidential`, 10, 22);
 
-      pdf.addImage(imgData, "PNG", 10, 30, pdfWidth - 20, imgHeight);
-      pdf.save(`${selectedTest}_Trend_Report.pdf`);
+      // Render image starting at topPadding
+      pdf.addImage(imgData, "PNG", 10, position, pdfWidth - 20, imgHeight);
+      
+      let heightLeft = imgHeight - (pageHeight - topPadding);
+
+      // Paginate horizontally long images by adding new pages and shifting the image position UP
+      while (heightLeft > 0) {
+        position = position - pageHeight + topPadding; // Shift up 
+        pdf.addPage();
+        
+        // Repeated Header for new pages
+        pdf.setFontSize(10);
+        pdf.text(`Patient Health Trends Report (Continued)`, 10, 10);
+        
+        pdf.addImage(imgData, "PNG", 10, position, pdfWidth - 20, imgHeight);
+        heightLeft -= (pageHeight - 20); // 20 reserved for header/footer margins
+      }
+
+      pdf.save(`Health_Trends_${new Date().toISOString().split('T')[0]}.pdf`);
     } catch (error) {
       console.error("Error generating PDF:", error);
+    } finally {
+      setIsDownloading(false);
     }
   };
-
-  const trendData = useMemo(
-    () => (selectedTest ? buildTrendData(reports, selectedTest) : []),
-    [reports, selectedTest]
-  );
-
-  const latestRef = trendData.length > 0 ? trendData[trendData.length - 1] : null;
 
   if (availableTests.length === 0) {
     return (
@@ -110,147 +129,157 @@ export default function TrendChart({ reports }: TrendChartProps) {
     );
   }
 
-  // Overview: show all tests as cards
-  if (!selectedTest) {
-    return (
-      <div className="space-y-3">
-        <div className="flex items-center justify-between px-1">
-          <p className="text-xs text-muted-foreground">Tap any test to see its full trend chart.</p>
-        </div>
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 p-1">
-          {availableTests.map((test) => {
-            const latest = getLatestTestValue(reports, test);
-            const sparkData = buildTrendData(reports, test);
-            return (
-              <button
-                key={test}
-                onClick={() => setSelectedTest(test)}
-                className="text-left rounded-xl border border-border bg-card p-3 shadow-sm hover:border-primary/50 hover:shadow-md transition-all active:scale-95"
-              >
-                <p className="text-[10px] text-muted-foreground truncate mb-1">{test}</p>
-                <div className="flex items-end justify-between gap-2">
-                  <div>
-                    <p className="text-lg font-bold text-foreground leading-none">{latest?.value ?? "—"}</p>
-                    {latest && (
-                      <span
-                        className="inline-block mt-1 rounded-full px-1.5 py-0.5 text-[9px] font-medium"
-                        style={{ backgroundColor: `${latest.fill}20`, color: latest.fill }}
-                      >
-                        {STATUS_LABELS[latest.status] || latest.status}
-                      </span>
-                    )}
-                  </div>
-                  <MiniSparkline data={sparkData} />
-                </div>
-              </button>
-            );
-          })}
-        </div>
-      </div>
-    );
-  }
-
-  // Detail view for a selected test
   return (
-    <div className="space-y-3">
-      {/* Back + test tabs */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
-        <button
-          onClick={() => setSelectedTest(null)}
-          className="flex-shrink-0 rounded-full border border-border px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-accent transition-colors"
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-teal-50/50 p-4 rounded-xl border border-teal-100/50">
+        <div className="flex items-center gap-3">
+          <div className="w-1.5 h-6 bg-teal-600 rounded-full" />
+          <h2 className="text-lg font-bold text-slate-800 m-0">Health Trends</h2>
+          <span className="text-[10px] sm:text-xs bg-teal-50 text-teal-700 px-3 py-1 rounded-md ml-2 border border-teal-100 hidden sm:inline-block">
+            track, compare & gain deep insights into our body vitals
+          </span>
+        </div>
+        
+        <Button 
+          variant="outline" 
+          size="sm" 
+          className="h-8 gap-1.5 text-xs bg-white" 
+          onClick={handleDownloadPdf}
+          disabled={isDownloading}
         >
-          ← All Tests
-        </button>
-        {availableTests.map((test) => (
-          <button
-            key={test}
-            onClick={() => setSelectedTest(test)}
-            className={`flex-shrink-0 rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${selectedTest === test
-              ? "bg-primary text-primary-foreground shadow-sm"
-              : "bg-muted text-muted-foreground hover:bg-accent"
-              }`}
-          >
-            {test}
-          </button>
-        ))}
+          <Download className="h-3.5 w-3.5" />
+          {isDownloading ? "Generating PDF..." : "Download Trend Report"}
+        </Button>
       </div>
 
-      {/* Chart card */}
-      <Card className="shadow-sm">
-        <CardContent className="p-3 sm:p-4">
-          <div className="flex items-center justify-between mb-1">
-            <h4 className="font-semibold text-sm text-foreground">{selectedTest}</h4>
-            <div className="flex items-center gap-3">
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-8 gap-1.5 text-xs"
-                onClick={handleDownloadPdf}
-              >
-                <Download className="h-3.5 w-3.5" />
-                Download PDF
-              </Button>
-              {latestRef && (
-                <div className="flex items-center gap-1">
-                  <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ backgroundColor: latestRef.fill }} />
-                  <span className="text-[10px] text-muted-foreground">{STATUS_LABELS[latestRef.status]}</span>
+      <div ref={chartWrapperRef} className="grid grid-cols-1 xl:grid-cols-2 gap-4 bg-transparent p-1">
+        {availableTests.map((testName) => {
+          const trendData = buildTrendData(reports, testName);
+          if (trendData.length < 1) return null;
+
+          const latest = trendData[trendData.length - 1];
+          const previous = trendData.length > 1 ? trendData[trendData.length - 2] : null;
+
+          // React imports for icons instead of direct lucide imports since they might not be included
+          // We'll use simple HTML symbols or standard UI rendering
+          let changeIcon = "➖";
+          let changeText = "Stable";
+          let changeColor = "text-slate-500";
+          let changeValue = "0";
+
+          if (previous) {
+            const diff = latest.value - previous.value;
+            if (diff > 0) {
+              changeIcon = "↗";
+              changeText = "Increased by";
+              changeColor = "text-teal-600";
+              changeValue = Math.abs(diff).toFixed(2);
+            } else if (diff < 0) {
+              changeIcon = "↘";
+              changeText = "Reduced by";
+              changeColor = "text-teal-600";
+              changeValue = Math.abs(diff).toFixed(2);
+            }
+          }
+
+          const displayRefRange =
+            latest.refMin != null && latest.refMax != null
+              ? `${latest.refMin} - ${latest.refMax}`
+              : "0.0 - 0.0";
+
+          const minData = Math.min(...trendData.map(d => d.value), latest.refMin ?? Infinity);
+          const maxData = Math.max(...trendData.map(d => d.value), latest.refMax ?? -Infinity);
+          
+          let yDomain: [number | 'auto', number | 'auto'] = ['auto', 'auto'];
+          if (isFinite(minData) && isFinite(maxData)) {
+            const padding = (maxData - minData) * 0.2;
+            yDomain = [Math.max(0, minData - padding), maxData + padding];
+          }
+
+          return (
+            <div key={testName} className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm relative">
+              <div className="flex justify-between items-start mb-5">
+                <h3 className="font-bold text-slate-800 text-xs sm:text-sm">{testName}</h3>
+                <span
+                  className="rounded-full text-[10px] px-2.5 py-0.5 font-medium border"
+                  style={{
+                    backgroundColor: `${latest.fill}15`,
+                    color: latest.fill,
+                    borderColor: `${latest.fill}40`
+                  }}
+                >
+                  {STATUS_LABELS[latest.status] || "Good"}
+                </span>
+              </div>
+
+              <div className="flex justify-between items-end mb-4 px-1">
+                <div className="flex flex-col">
+                  <span className="text-[10px] text-slate-500 font-semibold mb-0.5">Normal Range</span>
+                  <span className="text-[11px] sm:text-xs text-teal-600 font-medium">
+                    {displayRefRange} <span className="text-slate-400 font-normal">unit</span>
+                  </span>
                 </div>
-              )}
-            </div>
-          </div>
-          <div ref={chartRef} className="bg-card p-2 rounded-lg">
-            <p className="text-[10px] text-muted-foreground mb-4">
-              {trendData.length} data point{trendData.length > 1 ? "s" : ""}
-              {latestRef?.refMin != null && latestRef?.refMax != null && (
-                <> · Reference: {latestRef.refMin}–{latestRef.refMax}</>
-              )}
-            </p>
+                
+                <div className="flex flex-col items-center">
+                  <span className="text-[10px] text-slate-500 font-medium mb-0.5">Currently</span>
+                  <span className="text-[11px] sm:text-xs font-bold text-slate-800">
+                    {latest.value} <span className="text-slate-400 font-normal">unit</span>
+                  </span>
+                </div>
 
-            <div className="h-52 sm:h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={trendData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
-                  <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-                  <XAxis dataKey="date" tick={{ fontSize: 10 }} tickLine={false} axisLine={false} />
-                  <YAxis tick={{ fontSize: 10 }} tickLine={false} axisLine={false} width={40} />
-                  <Tooltip content={<StatusTooltip />} />
-                  {latestRef?.refMin != null && latestRef?.refMax != null && (
-                    <ReferenceArea y1={latestRef.refMin} y2={latestRef.refMax} fill="#22c55e" fillOpacity={0.08} strokeOpacity={0} />
-                  )}
-                  {latestRef?.refMin != null && (
-                    <ReferenceLine y={latestRef.refMin} stroke="#22c55e" strokeDasharray="5 5" strokeOpacity={0.5}
-                      label={{ value: "Min", position: "left", style: { fontSize: 9, fill: "#22c55e" } }} />
-                  )}
-                  {latestRef?.refMax != null && (
-                    <ReferenceLine y={latestRef.refMax} stroke="#22c55e" strokeDasharray="5 5" strokeOpacity={0.5}
-                      label={{ value: "Max", position: "left", style: { fontSize: 9, fill: "#22c55e" } }} />
-                  )}
-                  <Line type="monotone" dataKey="value" stroke="hsl(var(--muted-foreground))" strokeWidth={2}
-                    strokeOpacity={0.4} dot={<StatusDot />} activeDot={{ r: 8 }} />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-
-            {/* Data table */}
-            <div className="mt-4 space-y-1">
-              {trendData.map((point, i) => (
-                <div key={i} className="flex items-center justify-between text-xs py-1.5 border-b border-border/30 last:border-0">
-                  <span className="text-muted-foreground">{point.date}</span>
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium text-foreground">{point.value}</span>
-                    <span
-                      className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium"
-                      style={{ backgroundColor: `${point.fill}15`, color: point.fill }}
-                    >
-                      <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: point.fill }} />
-                      {STATUS_LABELS[point.status] || point.status}
-                    </span>
+                <div className="flex flex-col items-end">
+                  <span className="text-[10px] text-slate-500 font-medium mb-0.5">{changeText}</span>
+                  <div className={`flex items-center gap-1 text-[11px] sm:text-xs font-bold ${changeColor}`}>
+                    <span className="text-sm leading-none">{changeIcon}</span>
+                    <span>{changeValue} <span className="font-normal text-slate-500">unit</span></span>
                   </div>
                 </div>
-              ))}
+              </div>
+
+              <div className="h-[140px] w-full mt-4 bg-slate-50/50 rounded-lg relative overflow-hidden flex items-center justify-center">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={trendData} margin={{ top: 20, right: 20, left: 10, bottom: 20 }}>
+                      {latest.refMin != null && latest.refMax != null && (
+                        <ReferenceArea
+                          y1={latest.refMin}
+                          y2={latest.refMax}
+                          fill="#d1fae5"
+                          fillOpacity={0.6}
+                          strokeOpacity={0}
+                        />
+                      )}
+
+                      <XAxis
+                        dataKey="date"
+                        tick={{ fontSize: 9, fill: "#94a3b8" }}
+                        tickLine={false}
+                        axisLine={false}
+                        dy={10}
+                      />
+                      <YAxis
+                        domain={yDomain as any}
+                        tick={{ fontSize: 9, fill: "#94a3b8" }}
+                        tickLine={false}
+                        axisLine={false}
+                        width={30}
+                        dx={-10}
+                      />
+                      <Tooltip content={<StatusTooltip />} />
+                      <Line
+                        type="monotone"
+                        dataKey="value"
+                        stroke="#0f766e"
+                        strokeWidth={2}
+                        dot={<StatusDot />}
+                        activeDot={{ r: 6, stroke: "#0f766e", strokeWidth: 2 }}
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+              </div>
             </div>
-          </div>
-        </CardContent>
-      </Card>
+          );
+        })}
+      </div>
     </div>
   );
 }

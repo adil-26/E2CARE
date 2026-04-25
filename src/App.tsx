@@ -22,6 +22,7 @@ import ResetPassword from "@/pages/auth/ResetPassword";
 
 // Public pages
 import EmergencyAccess from "@/pages/EmergencyAccess";
+import PublicPatientId from "@/pages/PublicPatientId";
 import NotFound from "@/pages/NotFound";
 import DoctorRegister from "@/pages/DoctorRegister";
 
@@ -39,6 +40,7 @@ import WalletPage from "@/pages/WalletPage";
 import Referrals from "@/pages/Referrals";
 import SettingsPage from "@/pages/SettingsPage";
 import ComparisonAnalysis from "@/pages/ComparisonAnalysis";
+import TreatmentPlans from "@/pages/TreatmentPlans";
 
 // Doctor pages
 import DoctorDashboard from "@/pages/doctor/DoctorDashboard";
@@ -48,6 +50,7 @@ import DoctorPrescriptions from "@/pages/doctor/DoctorPrescriptions";
 import CreatePrescription from "@/pages/doctor/CreatePrescription";
 import DoctorAppointments from "@/pages/doctor/DoctorAppointments";
 import DoctorMessages from "@/pages/doctor/DoctorMessages";
+import CreateTreatmentPlan from "@/pages/doctor/CreateTreatmentPlan";
 
 // Admin pages
 import AdminDashboard from "@/pages/admin/AdminDashboard";
@@ -77,6 +80,7 @@ const App = () => (
 
               {/* Public routes */}
               <Route path="/emergency-access/:medicalId" element={<EmergencyAccess />} />
+              <Route path="/id/:patientId" element={<PublicPatientId />} />
 
               {/* Doctor registration (requires auth) */}
               <Route
@@ -119,6 +123,7 @@ const App = () => (
                 <Route path="/referrals" element={<Referrals />} />
                 <Route path="/settings" element={<SettingsPage />} />
                 <Route path="/comparison" element={<ComparisonAnalysis />} />
+                <Route path="/treatments" element={<TreatmentPlans />} />
               </Route>
 
               {/* Doctor routes */}
@@ -138,6 +143,7 @@ const App = () => (
                 <Route path="/doctor/appointments" element={<DoctorAppointments />} />
                 <Route path="/doctor/prescriptions" element={<DoctorPrescriptions />} />
                 <Route path="/doctor/prescriptions/new" element={<CreatePrescription />} />
+                <Route path="/doctor/treatment-plan/new" element={<CreateTreatmentPlan />} />
               </Route>
 
               {/* Admin routes */}

@@ -17,11 +17,15 @@ import { Checkbox } from "@/components/ui/checkbox";
 import type { Medication } from "@/hooks/useMedications";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { HearOutButton } from "@/components/ui/HearOutButton";
+import { MedicineAdherenceDashboard } from "@/components/doctor/MedicineAdherenceDashboard";
+import { useAuth } from "@/hooks/useAuth";
 
 interface MedicineReminderProps {
   medications: Medication[];
   onAdd: (med: Omit<Medication, "id" | "is_active">) => void;
   isAdding?: boolean;
+  onLog?: (medId: string) => void;
+  isLogging?: boolean;
 }
 
 const scheduleIcons: Record<string, typeof Sun> = {
@@ -32,7 +36,8 @@ const scheduleIcons: Record<string, typeof Sun> = {
 
 const scheduleOptions = ["morning", "afternoon", "night"];
 
-export default function MedicineReminder({ medications, onAdd, isAdding }: MedicineReminderProps) {
+export default function MedicineReminder({ medications, onAdd, isAdding, onLog, isLogging }: MedicineReminderProps) {
+  const { user } = useAuth();
   const { t } = useLanguage();
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
@@ -137,6 +142,12 @@ export default function MedicineReminder({ medications, onAdd, isAdding }: Medic
         </Dialog>
       </div>
 
+      {user?.id && (
+        <div className="mb-4">
+          <MedicineAdherenceDashboard patientId={user.id} />
+        </div>
+      )}
+
       {medications.length === 0 ? (
         <Card className="shadow-sm">
           <CardContent className="flex flex-col items-center justify-center py-8 text-center">
@@ -158,11 +169,22 @@ export default function MedicineReminder({ medications, onAdd, isAdding }: Medic
                     <div key={med.id} className="flex items-center justify-between rounded-lg bg-card p-2">
                       <div>
                         <p className="text-sm font-medium text-foreground">{med.name}</p>
-                        <p className="text-xs text-muted-foreground">{med.dosage}</p>
+                        <div className="flex gap-2 items-center">
+                          <p className="text-xs text-muted-foreground">{med.dosage}</p>
+                          <Badge variant="outline" className="text-[10px]">
+                            {med.frequency}
+                          </Badge>
+                        </div>
                       </div>
-                      <Badge variant="outline" className="text-[10px]">
-                        {med.frequency}
-                      </Badge>
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        className="h-8 gap-1 ml-2 shrink-0 bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900/30 dark:text-green-400"
+                        onClick={() => onLog?.(med.id)}
+                        disabled={isLogging}
+                      >
+                        Taken
+                      </Button>
                     </div>
                   ))}
                 </div>

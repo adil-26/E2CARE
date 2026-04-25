@@ -56,7 +56,7 @@ export function usePatientFullData(patientUserId?: string) {
     queryFn: async () => {
       const uid = patientUserId!;
 
-      const [profileRes, vitalsRes, medsRes, reportsRes, conditionsRes, historyRes] =
+      const [profileRes, vitalsRes, medsRes, reportsRes, conditionsRes, historyRes, plansRes] =
         await Promise.all([
           supabase.from("profiles").select("*").eq("user_id", uid).maybeSingle(),
           supabase.from("vitals").select("*").eq("user_id", uid).order("recorded_at", { ascending: false }).limit(50),
@@ -64,6 +64,7 @@ export function usePatientFullData(patientUserId?: string) {
           supabase.from("medical_reports").select("*").eq("user_id", uid).order("created_at", { ascending: false }),
           supabase.from("condition_logs").select("*").eq("user_id", uid).order("recorded_at", { ascending: false }).limit(100),
           supabase.from("medical_history").select("*").eq("user_id", uid).maybeSingle(),
+          supabase.from("treatment_plans" as any).select("*").eq("patient_id", uid).order("created_at", { ascending: false }),
         ]);
 
       return {
@@ -73,6 +74,7 @@ export function usePatientFullData(patientUserId?: string) {
         reports: reportsRes.data || [],
         conditionLogs: conditionsRes.data || [],
         medicalHistory: historyRes.data,
+        treatmentPlans: plansRes.data || [],
       };
     },
   });

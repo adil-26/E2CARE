@@ -14,6 +14,7 @@ export interface ComparisonItem {
   change: string; // "rising", "dropping", "stable", "new", "updated", "persistent", "initial"
   percentChange?: string;
   interpretation: string;
+  reference_range?: string;
 }
 
 export function processReportsForComparison(reports: MedicalReport[]) {
@@ -29,7 +30,7 @@ export function processReportsForComparison(reports: MedicalReport[]) {
   if (sortedReports.length < 1) return { sortedReports: [], comparisonItems: [], categories: [] };
 
   // 2. Extract unique tests and findings inventory
-  const itemsMap: Record<string, { category: string; unit: string; type: 'test' | 'finding' }> = {};
+  const itemsMap: Record<string, { category: string; unit: string; type: 'test' | 'finding'; reference_range?: string }> = {};
   
   sortedReports.forEach(r => {
     // Extract numeric tests
@@ -39,8 +40,12 @@ export function processReportsForComparison(reports: MedicalReport[]) {
         itemsMap[t.test_name] = {
           category: t.category || "General",
           unit: t.unit || "",
-          type: 'test'
+          type: 'test',
+          reference_range: t.reference_range || ""
         };
+      } else if (!itemsMap[t.test_name].reference_range && t.reference_range) {
+        // use the most recent reference range if first one was missing
+        itemsMap[t.test_name].reference_range = t.reference_range;
       }
     });
 
@@ -135,7 +140,8 @@ export function processReportsForComparison(reports: MedicalReport[]) {
       values,
       change,
       percentChange,
-      interpretation
+      interpretation,
+      reference_range: (info as any).reference_range
     };
   });
 

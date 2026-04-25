@@ -18,6 +18,7 @@ import {
   Heart,
   Stethoscope,
   Scale,
+  Leaf,
 } from "lucide-react";
 import {
   Sidebar,
@@ -50,6 +51,7 @@ export default function AppSidebar() {
     { title: t.nav.messages, icon: MessageSquare, path: "/messages" },
     { title: t.nav.aiChat, icon: Bot, path: "/chat" },
     { title: t.nav.comparison, icon: Scale, path: "/comparison" },
+    { title: "Treatment Plans", icon: Leaf, path: "/treatments" },
   ];
 
   const moreNavItems = [

@@ -58,5 +58,29 @@ export function useMedications() {
     },
   });
 
-  return { medications: medsQuery.data ?? [], isLoading: medsQuery.isLoading, addMedication };
+  const logMedicine = useMutation({
+    mutationFn: async ({ medId, logStatus = "taken" }: { medId: string; logStatus?: string }) => {
+      if (!user) throw new Error("Not authenticated");
+      const { error } = await supabase
+        .from("medicine_logs" as any)
+        .insert({
+          patient_id: user.id,
+          medication_id: medId,
+          status: logStatus,
+          taken_at: new Date().toISOString(),
+          scheduled_time: new Date().toISOString(),
+        });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["medicine_logs"] });
+      queryClient.invalidateQueries({ queryKey: ["medications_adherence"] });
+      toast({ title: "Logged Successfully", description: "Your medication was marked as taken." });
+    },
+    onError: (err) => {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    },
+  });
+
+  return { medications: medsQuery.data ?? [], isLoading: medsQuery.isLoading, addMedication, logMedicine };
 }

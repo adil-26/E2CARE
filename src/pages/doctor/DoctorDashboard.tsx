@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
-import { Users, Calendar, FileText, Pill, TrendingUp } from "lucide-react";
+import { Users, Calendar, FileText, Pill, TrendingUp, AlertCircle, ShieldAlert, ChevronRight } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { useDoctorProfile, useDoctorPatients } from "@/hooks/useDoctorPatients";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -44,6 +45,21 @@ export default function DoctorDashboard() {
     { label: "Prescriptions", value: recentPrescriptions.length, icon: Pill, color: "text-info" },
   ];
 
+  const { data: globalAlerts = [] } = useQuery({
+    queryKey: ["global_clinical_alerts", doctorProfile?.id],
+    enabled: patients.length > 0,
+    queryFn: async () => {
+      const patientIds = patients.map((p: any) => p.user_id);
+      const { data } = await supabase
+        .from("clinical_alerts" as any)
+        .select(`*`)
+        .in("patient_id", patientIds)
+        .eq("is_resolved", false)
+        .order("created_at", { ascending: false });
+      return data || [];
+    },
+  });
+
   return (
     <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
       <div>
@@ -69,6 +85,38 @@ export default function DoctorDashboard() {
           </Card>
         ))}
       </div>
+
+      {globalAlerts.length > 0 && (
+        <Card className="border-destructive/30 shadow-md animate-in slide-in-from-top-4">
+          <CardHeader className="bg-destructive/5 pb-3">
+            <CardTitle className="flex items-center justify-between text-base">
+              <span className="flex items-center gap-2 text-destructive">
+                <ShieldAlert className="h-5 w-5" />
+                Action Required ({globalAlerts.length})
+              </span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-4 space-y-3">
+            {globalAlerts.map((alert: any) => {
+               const p = patients.find((pat: any) => pat.user_id === alert.patient_id);
+               return (
+                 <div key={alert.id} className="flex justify-between items-center bg-background border p-3 rounded-xl hover:border-destructive/50 transition-colors">
+                   <div className="flex gap-3 items-center">
+                     <AlertCircle className="w-5 h-5 text-destructive" />
+                     <div>
+                       <h4 className="font-semibold text-sm">{alert.title}</h4>
+                       <p className="text-xs text-muted-foreground">{p?.full_name || "Unknown Patient"}</p>
+                     </div>
+                   </div>
+                   <Button variant="outline" size="sm" onClick={() => window.location.href=`/doctor/patients/${alert.patient_id}`}>
+                     View Patient <ChevronRight className="w-4 h-4 ml-1" />
+                   </Button>
+                 </div>
+               );
+            })}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Today's Appointments */}
       <Card className="shadow-sm">
