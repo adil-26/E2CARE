@@ -140,7 +140,7 @@ export function useMedicalReports() {
       try {
         const { data: reportToDel } = await supabase.from("medical_reports").select("file_url").eq("id", reportId).single();
         if (reportToDel && reportToDel.file_url) {
-          const filePath = reportToDel.file_url.includes("/") 
+          const filePath = reportToDel.file_url.includes("medical-reports/") 
             ? reportToDel.file_url.split("medical-reports/")[1]?.split("?")[0] 
             : reportToDel.file_url;
             

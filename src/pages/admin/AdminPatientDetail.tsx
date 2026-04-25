@@ -64,7 +64,7 @@ export default function AdminPatientDetail() {
       try {
         const { data: reportToDel } = await supabase.from("medical_reports").select("file_url").eq("id", reportId).single();
         if (reportToDel && reportToDel.file_url) {
-          const filePath = reportToDel.file_url.includes("/") 
+          const filePath = reportToDel.file_url.includes("medical-reports/") 
             ? reportToDel.file_url.split("medical-reports/")[1]?.split("?")[0] 
             : reportToDel.file_url;
           if (filePath) {
@@ -93,7 +93,7 @@ export default function AdminPatientDetail() {
         const { data: reportsToDel } = await supabase.from("medical_reports").select("file_url").eq("user_id", patientId);
         if (reportsToDel && reportsToDel.length > 0) {
           const filePaths = reportsToDel
-            .map(r => r.file_url.includes("/") ? r.file_url.split("medical-reports/")[1]?.split("?")[0] : r.file_url)
+            .map(r => r.file_url.includes("medical-reports/") ? r.file_url.split("medical-reports/")[1]?.split("?")[0] : r.file_url)
             .filter(Boolean);
           if (filePaths.length > 0) {
             await supabase.storage.from("medical-reports").remove(filePaths as string[]);
