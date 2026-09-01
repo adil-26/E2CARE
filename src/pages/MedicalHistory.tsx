@@ -160,7 +160,7 @@ export default function MedicalHistory() {
   return (
     <>
       <CompletionCelebration show={showCelebration} onClose={handleCloseCelebration} />
-      <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="space-y-3 sm:space-y-4 overflow-x-hidden">
+      <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="mx-auto w-full max-w-6xl space-y-3 sm:space-y-4 overflow-x-hidden">
         <div className="flex items-center justify-between">
           <h2 className="font-display text-lg sm:text-xl font-bold text-foreground">{t.history.title}</h2>
           <Button
@@ -271,17 +271,20 @@ export default function MedicalHistory() {
           <div className="flex flex-col md:flex-row gap-6">
             {/* Desktop sidebar stepper */}
             <div className="hidden md:block md:w-56 lg:w-64 flex-shrink-0">
-              <StepNavigation
-                steps={STEPS.map(s => ({ ...s, label: t.history[s.key as keyof typeof t.history] as string }))}
-                currentStep={currentStep}
-                onStepChange={setCurrentStep}
-                filledSteps={localData}
-                completionPercent={completionPercent}
-              />
+              <div className="sticky top-20">
+                <StepNavigation
+                  steps={STEPS.map(s => ({ ...s, label: t.history[s.key as keyof typeof t.history] as string }))}
+                  currentStep={currentStep}
+                  onStepChange={setCurrentStep}
+                  filledSteps={localData}
+                  completionPercent={completionPercent}
+                />
+              </div>
             </div>
 
             {/* Step content */}
             <div className="flex-1 min-w-0 space-y-3 sm:space-y-4">
+
               <Card className="shadow-sm border-border/60">
                 <CardContent className="p-3.5 sm:p-5 md:p-6">
                   {/* Step header */}
@@ -315,7 +318,8 @@ export default function MedicalHistory() {
               </Card>
 
               {/* Navigation buttons */}
-              <div className="flex items-center justify-between pb-2 sm:pb-0">
+              <div className="sticky bottom-0 z-10 -mx-1 flex items-center justify-between gap-2 rounded-xl border border-border/60 bg-background/85 px-2 py-2 backdrop-blur supports-[backdrop-filter]:bg-background/70">
+
                 <Button
                   variant="outline"
                   size="sm"
