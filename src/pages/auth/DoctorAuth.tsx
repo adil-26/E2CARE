@@ -130,7 +130,7 @@ export default function DoctorAuth() {
 
     setIsLoading(true);
     try {
-      const { error: signUpError } = await signUp(signupEmail, signupPassword, signupName);
+      const { error: signUpError } = await signUp(signupEmail, signupPassword, signupName, "prefer_not_say");
       if (signUpError) throw signUpError;
 
       const { data: { session } } = await supabase.auth.getSession();
