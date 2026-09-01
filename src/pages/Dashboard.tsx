@@ -55,15 +55,13 @@ const vitalDefaults = [
   { type: "temperature", label: "Temperature", value: "—", unit: "°F", icon: Thermometer, status: "normal" as const },
 ];
 
-function computeHealthScore(latestVitals: { vital_type: string; status: string }[]): number {
-  if (latestVitals.length === 0) return 0;
-  const scoreMap = { normal: 100, attention: 60, critical: 20 };
-  const total = latestVitals.reduce(
-    (sum, v) => sum + (scoreMap[v.status as keyof typeof scoreMap] ?? 50),
-    0
-  );
-  return Math.round(total / latestVitals.length);
-}
+const scoreLabel = (score: number, count: number) => {
+  if (count === 0) return "no-data";
+  if (score >= 80) return "stable";
+  if (score >= 50) return "attention";
+  return "critical";
+};
+
 
 export default function Dashboard() {
   const { user } = useAuth();
