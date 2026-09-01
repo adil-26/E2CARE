@@ -180,7 +180,7 @@ export default function StepLifestyle({ data, onChange }: StepLifestyleProps) {
         </div>
         <div className="grid gap-2.5 sm:gap-3 grid-cols-1 sm:grid-cols-2">
           <div className="space-y-1.5">
-            <Label className="text-[10px] sm:text-xs">{t.history.averageSleep}</Label>
+            <Label className="text-[10px] sm:text-xs">{"Average sleep (hours)"}</Label>
             <Input className="h-10 text-sm" type="number" placeholder="e.g. 7" value={data.sleep_hours || ""} onChange={(e) => update("sleep_hours", e.target.value)} min="1" max="16" step="0.5" />
           </div>
           <div className="space-y-1.5">
@@ -229,10 +229,10 @@ export default function StepLifestyle({ data, onChange }: StepLifestyleProps) {
                 <SelectValue placeholder={t.common.all + "..."} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="none">{t.lifestyle.none}</SelectItem>
-                <SelectItem value="depression">{t.familyHistory.depression}</SelectItem>
-                <SelectItem value="anxiety">{t.familyHistory.anxiety}</SelectItem>
-                <SelectItem value="both">{t.familyHistory.depression} & {t.familyHistory.anxiety}</SelectItem>
+                <SelectItem value="none">{"None"}</SelectItem>
+                <SelectItem value="depression">{"Depression"}</SelectItem>
+                <SelectItem value="anxiety">{"Anxiety"}</SelectItem>
+                <SelectItem value="both">{"Depression & Anxiety"}</SelectItem>
                 <SelectItem value="bipolar">Bipolar</SelectItem>
                 <SelectItem value="ptsd">PTSD</SelectItem>
                 <SelectItem value="other">{t.common.other}</SelectItem>
@@ -258,7 +258,7 @@ export default function StepLifestyle({ data, onChange }: StepLifestyleProps) {
             <SelectContent>
               <SelectItem value="desk_job">{t.lifestyle.deskJob}</SelectItem>
               <SelectItem value="physical_labor">{t.lifestyle.physicalLabor}</SelectItem>
-              <SelectItem value="mixed">{t.common.mixed}</SelectItem>
+              <SelectItem value="mixed">{"Mixed"}</SelectItem>
               <SelectItem value="homemaker">{t.lifestyle.homemaker}</SelectItem>
               <SelectItem value="student">{t.lifestyle.student}</SelectItem>
               <SelectItem value="retired">{t.lifestyle.retired}</SelectItem>
