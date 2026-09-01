@@ -5,6 +5,8 @@ import { useMedications } from "@/hooks/useMedications";
 import { useAppointments } from "@/hooks/useAppointments";
 import { format } from "date-fns";
 import { getEffectiveStatus, appointmentDateTime } from "@/lib/appointmentStatus";
+import { classifyVital, computeHealthScore } from "@/lib/vitalRanges";
+
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
