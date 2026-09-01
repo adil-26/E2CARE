@@ -2,6 +2,9 @@ import { useAuth } from "@/hooks/useAuth";
 import { useVitals } from "@/hooks/useVitals";
 import { useDailyRoutine } from "@/hooks/useDailyRoutine";
 import { useMedications } from "@/hooks/useMedications";
+import { useAppointments } from "@/hooks/useAppointments";
+import { format } from "date-fns";
+import { getEffectiveStatus, appointmentDateTime } from "@/lib/appointmentStatus";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
@@ -17,6 +20,7 @@ import {
   Bot,
   Gift,
   Leaf,
+  CalendarX,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -68,6 +72,12 @@ export default function Dashboard() {
   const { routine, upsertRoutine } = useDailyRoutine();
   const { medications, addMedication, logMedicine } = useMedications();
   const { t } = useLanguage();
+  const { appointments } = useAppointments();
+
+  const needsReview = appointments.filter((a) => getEffectiveStatus(a) === "pending_review");
+  const nextAppointment = appointments
+    .filter((a) => ["today", "upcoming"].includes(getEffectiveStatus(a)))
+    .sort((a, b) => appointmentDateTime(a).getTime() - appointmentDateTime(b).getTime())[0];
 
   const { data: profile } = useQuery({
     queryKey: ["profile", user?.id],
