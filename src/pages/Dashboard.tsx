@@ -66,7 +66,7 @@ const scoreLabel = (score: number, count: number) => {
 export default function Dashboard() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const { latestVitals, addVital } = useVitals();
+  const { vitals: allVitals, latestVitals, addVital } = useVitals();
   const { routine, upsertRoutine } = useDailyRoutine();
   const { medications, addMedication, logMedicine } = useMedications();
   const { t } = useLanguage();
@@ -93,15 +93,23 @@ export default function Dashboard() {
 
   const firstName = profile?.full_name?.split(" ")[0] || user?.email?.split("@")[0] || "User";
 
-  // Merge latest vitals onto defaults
+  // Merge latest vitals onto defaults, classifying each reading against medical ranges
   const vitals = vitalDefaults.map((def) => {
-    const latest = latestVitals.find((v) => v.vital_type === def.type);
-    return latest
-      ? { ...def, value: latest.value, status: latest.status as "normal" | "attention" | "critical" }
-      : def;
+    const history = allVitals.filter((v) => v.vital_type === def.type);
+    const latest = history[0];
+    if (!latest) return { ...def, recordedAt: null, previousValue: null };
+    return {
+      ...def,
+      value: latest.value,
+      status: classifyVital(def.type, latest.value, latest.status as any),
+      recordedAt: latest.recorded_at,
+      previousValue: history[1]?.value ?? null,
+    };
   });
 
   const healthScore = computeHealthScore(latestVitals);
+  const scoreState = scoreLabel(healthScore, latestVitals.length);
+  const flagged = vitals.filter((v) => v.value !== "—" && v.status !== "normal");
 
   return (
     <motion.div variants={container} initial="hidden" animate="show" className="space-y-6">
@@ -114,23 +122,32 @@ export default function Dashboard() {
 
       {/* Health Status + Score */}
       <motion.div variants={item}>
-        <div className="mb-4 flex items-center justify-between">
-          <h1 className="text-xl font-bold text-foreground">
-            {t.dashboard.greeting}, {firstName}
-          </h1>
-          <HearOutButton text={`${t.dashboard.greeting}, ${firstName}. ${t.dashboard.welcome}.`} />
-        </div>
         <Card className="overflow-hidden border-none bg-gradient-to-br from-primary to-secondary text-primary-foreground shadow-lg">
           <CardContent className="flex items-center justify-between gap-4 p-6">
             <div className="flex-1">
-              <p className="text-sm opacity-90">{t.dashboard.healthStatus}</p>
+              <div className="flex items-center gap-1">
+                <p className="text-sm opacity-90">{t.dashboard.healthStatus}</p>
+                <HearOutButton text={`${t.dashboard.healthStatus}. ${t.dashboard.basedOnReadings}.`} />
+              </div>
               <h2 className="font-display text-2xl font-bold">
-                {healthScore >= 80 ? t.dashboard.stable : healthScore >= 50 ? t.dashboard.attention : latestVitals.length === 0 ? t.dashboard.logVitals : t.dashboard.critical}
+                {scoreState === "no-data"
+                  ? t.dashboard.logVitals
+                  : scoreState === "stable"
+                    ? t.dashboard.stable
+                    : scoreState === "attention"
+                      ? t.dashboard.attention
+                      : t.dashboard.critical}
               </h2>
               <p className="mt-1 text-sm opacity-80">
-                {latestVitals.length === 0
+                {scoreState === "no-data"
                   ? t.dashboard.startLogging
-                  : t.dashboard.basedOnReadings}
+                  : flagged.length > 0
+                    ? `${flagged.length} reading${flagged.length > 1 ? "s" : ""} outside the healthy range: ${flagged
+                        .map((f) => f.label)
+                        .join(", ")}`
+                    : latestVitals.length < 6
+                      ? `${latestVitals.length} of 6 vitals tracked — log the rest for a fuller picture`
+                      : t.dashboard.basedOnReadings}
               </p>
             </div>
             <div className="flex-shrink-0 rounded-2xl bg-white/15 p-2 backdrop-blur-sm">
@@ -139,6 +156,7 @@ export default function Dashboard() {
           </CardContent>
         </Card>
       </motion.div>
+
 
       {/* Profile Completion Meter */}
       <motion.div variants={item}>
