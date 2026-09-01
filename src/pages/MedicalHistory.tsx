@@ -160,7 +160,7 @@ export default function MedicalHistory() {
   return (
     <>
       <CompletionCelebration show={showCelebration} onClose={handleCloseCelebration} />
-      <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="space-y-3 sm:space-y-4 overflow-x-hidden">
+      <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="mx-auto w-full max-w-6xl space-y-3 sm:space-y-4 overflow-x-hidden">
         <div className="flex items-center justify-between">
           <h2 className="font-display text-lg sm:text-xl font-bold text-foreground">{t.history.title}</h2>
           <Button
