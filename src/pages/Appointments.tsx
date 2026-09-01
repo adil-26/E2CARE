@@ -173,7 +173,26 @@ export default function Appointments() {
 
       {/* My Appointments Tab */}
       {tab === "my" && (
-        <div className="space-y-4">
+        <div className="space-y-5">
+          {/* Needs update (date passed, still open) */}
+          {needsReviewAppointments.length > 0 && (
+            <div className="space-y-2">
+              <h3 className="text-xs font-semibold text-amber-700 uppercase tracking-wider">
+                Needs Update · {needsReviewAppointments.length}
+              </h3>
+              {needsReviewAppointments.map((appt) => (
+                <AppointmentCard
+                  key={appt.id}
+                  appointment={appt}
+                  onCancel={() => {}}
+                  isCancelling={false}
+                  onMark={markStatus}
+                  isMarking={updateAppointmentStatus.isPending}
+                />
+              ))}
+            </div>
+          )}
+
           {/* Upcoming */}
           {upcomingAppointments.length > 0 && (
             <div className="space-y-2">
@@ -189,10 +208,10 @@ export default function Appointments() {
             </div>
           )}
 
-          {/* Past */}
+          {/* History */}
           {pastAppointments.length > 0 && (
             <div className="space-y-2">
-              <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Past & Cancelled</h3>
+              <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">History</h3>
               {pastAppointments.map((appt) => (
                 <AppointmentCard
                   key={appt.id}
@@ -203,6 +222,7 @@ export default function Appointments() {
               ))}
             </div>
           )}
+
 
           {/* Empty state */}
           {appointments.length === 0 && (
