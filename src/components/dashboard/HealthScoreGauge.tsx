@@ -16,11 +16,12 @@ export default function HealthScoreGauge({ score }: HealthScoreGaugeProps) {
   };
 
   const getLabel = () => {
-    if (clampedScore >= 80) return "Excellent";
-    if (clampedScore >= 60) return "Good";
-    if (clampedScore >= 40) return "Fair";
-    return "Needs Attention";
+    if (clampedScore >= 80) return "Healthy";
+    if (clampedScore >= 60) return "Watch";
+    if (clampedScore >= 46) return "Needs Care";
+    return "Urgent";
   };
+
 
   return (
     <div className="flex flex-col items-center justify-center">
