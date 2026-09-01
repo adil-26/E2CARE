@@ -271,17 +271,20 @@ export default function MedicalHistory() {
           <div className="flex flex-col md:flex-row gap-6">
             {/* Desktop sidebar stepper */}
             <div className="hidden md:block md:w-56 lg:w-64 flex-shrink-0">
-              <StepNavigation
-                steps={STEPS.map(s => ({ ...s, label: t.history[s.key as keyof typeof t.history] as string }))}
-                currentStep={currentStep}
-                onStepChange={setCurrentStep}
-                filledSteps={localData}
-                completionPercent={completionPercent}
-              />
+              <div className="sticky top-20">
+                <StepNavigation
+                  steps={STEPS.map(s => ({ ...s, label: t.history[s.key as keyof typeof t.history] as string }))}
+                  currentStep={currentStep}
+                  onStepChange={setCurrentStep}
+                  filledSteps={localData}
+                  completionPercent={completionPercent}
+                />
+              </div>
             </div>
 
             {/* Step content */}
             <div className="flex-1 min-w-0 space-y-3 sm:space-y-4">
+
               <Card className="shadow-sm border-border/60">
                 <CardContent className="p-3.5 sm:p-5 md:p-6">
                   {/* Step header */}
