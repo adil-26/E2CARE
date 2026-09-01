@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.1"
+    PostgrestVersion: "14.5"
   }
   public: {
     Tables: {
@@ -107,6 +107,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      clinical_alerts: {
+        Row: {
+          alert_type: string
+          created_at: string
+          description: string
+          id: string
+          is_resolved: boolean | null
+          patient_id: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          resolved_notes: string | null
+          severity: string
+          title: string
+        }
+        Insert: {
+          alert_type: string
+          created_at?: string
+          description: string
+          id?: string
+          is_resolved?: boolean | null
+          patient_id?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          resolved_notes?: string | null
+          severity: string
+          title: string
+        }
+        Update: {
+          alert_type?: string
+          created_at?: string
+          description?: string
+          id?: string
+          is_resolved?: boolean | null
+          patient_id?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          resolved_notes?: string | null
+          severity?: string
+          title?: string
+        }
+        Relationships: []
       }
       condition_logs: {
         Row: {
@@ -475,6 +517,42 @@ export type Database = {
         }
         Relationships: []
       }
+      medicine_logs: {
+        Row: {
+          created_at: string
+          id: string
+          medication_id: string
+          medication_name: string
+          notes: string | null
+          patient_id: string | null
+          scheduled_time: string
+          status: string | null
+          taken_at: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          medication_id: string
+          medication_name: string
+          notes?: string | null
+          patient_id?: string | null
+          scheduled_time: string
+          status?: string | null
+          taken_at?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          medication_id?: string
+          medication_name?: string
+          notes?: string | null
+          patient_id?: string | null
+          scheduled_time?: string
+          status?: string | null
+          taken_at?: string | null
+        }
+        Relationships: []
+      }
       messages: {
         Row: {
           attachment_name: string | null
@@ -702,6 +780,54 @@ export type Database = {
           referrer_id?: string
           reward_amount?: number
           status?: string
+        }
+        Relationships: []
+      }
+      treatment_plans: {
+        Row: {
+          ayurvedic_herbs: Json | null
+          created_at: string
+          description: string | null
+          diet_instructions: Json | null
+          doctor_id: string | null
+          end_date: string | null
+          id: string
+          lifestyle_changes: Json | null
+          patient_id: string | null
+          start_date: string
+          status: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          ayurvedic_herbs?: Json | null
+          created_at?: string
+          description?: string | null
+          diet_instructions?: Json | null
+          doctor_id?: string | null
+          end_date?: string | null
+          id?: string
+          lifestyle_changes?: Json | null
+          patient_id?: string | null
+          start_date: string
+          status?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          ayurvedic_herbs?: Json | null
+          created_at?: string
+          description?: string | null
+          diet_instructions?: Json | null
+          doctor_id?: string | null
+          end_date?: string | null
+          id?: string
+          lifestyle_changes?: Json | null
+          patient_id?: string | null
+          start_date?: string
+          status?: string | null
+          title?: string
+          updated_at?: string
         }
         Relationships: []
       }
