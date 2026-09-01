@@ -220,7 +220,7 @@ export default function Dashboard() {
         />
       </motion.div>
 
-      {/* Upcoming Appointment */}
+      {/* Appointments */}
       <motion.div variants={item}>
         <div className="mb-3 flex items-center justify-between">
           <h3 className="font-display text-base font-semibold text-foreground">
@@ -228,21 +228,57 @@ export default function Dashboard() {
           </h3>
           <HearOutButton text={t.dashboard.upcomingAppointment} />
         </div>
+
+        {needsReview.length > 0 && (
+          <Card className="shadow-sm mb-3 border-amber-200 bg-amber-50/60">
+            <CardContent className="flex items-center gap-3 p-4">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-100">
+                <CalendarX className="h-5 w-5 text-amber-700" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-amber-900">
+                  {needsReview.length} past appointment{needsReview.length > 1 ? "s" : ""} need an update
+                </p>
+                <p className="text-xs text-amber-700">Tell us if you attended or missed them.</p>
+              </div>
+              <Button size="sm" variant="outline" className="border-amber-300 text-amber-800" onClick={() => navigate("/appointments")}>
+                Review
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
         <Card className="shadow-sm">
           <CardContent className="flex items-center gap-4 p-4">
             <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
               <Calendar className="h-6 w-6 text-primary" />
             </div>
-            <div className="flex-1">
-              <p className="font-medium text-foreground">{t.dashboard.noAppointments}</p>
-              <p className="text-sm text-muted-foreground">{t.dashboard.bookOne}</p>
+            <div className="flex-1 min-w-0">
+              {nextAppointment ? (
+                <>
+                  <p className="font-medium text-foreground truncate">
+                    {nextAppointment.doctor?.full_name || "Doctor"}
+                  </p>
+                  <p className="text-sm text-muted-foreground truncate">
+                    {format(appointmentDateTime(nextAppointment), "EEE, d MMM")} ·{" "}
+                    {nextAppointment.start_time?.slice(0, 5)}
+                    {nextAppointment.doctor?.specialization ? ` · ${nextAppointment.doctor.specialization}` : ""}
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p className="font-medium text-foreground">{t.dashboard.noAppointments}</p>
+                  <p className="text-sm text-muted-foreground">{t.dashboard.bookOne}</p>
+                </>
+              )}
             </div>
             <Button size="sm" variant="outline" onClick={() => navigate("/appointments")}>
-              {t.dashboard.book}
+              {nextAppointment ? "View" : t.dashboard.book}
             </Button>
           </CardContent>
         </Card>
       </motion.div>
+
     </motion.div>
   );
 }
