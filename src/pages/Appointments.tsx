@@ -1,18 +1,18 @@
 import { useState, useMemo } from "react";
-import { isPast } from "date-fns";
 import { motion } from "framer-motion";
-import { Search, Calendar, Users, Clock } from "lucide-react";
+import { Search, Calendar, Users } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { useAppointments, Doctor } from "@/hooks/useAppointments";
 import DoctorCard from "@/components/appointments/DoctorCard";
 import BookingDialog from "@/components/appointments/BookingDialog";
 import AppointmentCard from "@/components/appointments/AppointmentCard";
+import { getEffectiveStatus } from "@/lib/appointmentStatus";
 
 const SPECIALTIES = ["All", "General Physician", "Cardiologist", "Dermatologist", "Orthopedic Surgeon", "Pediatrician", "ENT Specialist", "Gynecologist", "Neurologist"];
 
 export default function Appointments() {
-  const { doctors, isDoctorsLoading, appointments, isAppointmentsLoading, cancelAppointment } = useAppointments();
+  const { doctors, isDoctorsLoading, appointments, isAppointmentsLoading, cancelAppointment, updateAppointmentStatus } = useAppointments();
   const [search, setSearch] = useState("");
   const [activeSpec, setActiveSpec] = useState("All");
   const [bookingDoctor, setBookingDoctor] = useState<Doctor | null>(null);
@@ -36,23 +36,28 @@ export default function Appointments() {
     return list;
   }, [doctors, activeSpec, search]);
 
-  // Separate upcoming and past appointments
-  const upcomingAppointments = useMemo(
-    () => appointments.filter((a) => {
-      if (a.status !== "upcoming") return false;
-      const apptDate = new Date(`${a.appointment_date}T${a.start_time || "00:00"}:00`);
-      return !isPast(apptDate);
-    }),
-    [appointments]
-  );
-  const pastAppointments = useMemo(
-    () => appointments.filter((a) => {
-      if (a.status !== "upcoming") return true;
-      const apptDate = new Date(`${a.appointment_date}T${a.start_time || "00:00"}:00`);
-      return isPast(apptDate);
-    }),
-    [appointments]
-  );
+  // Group by real-world status
+  const { upcomingAppointments, needsReviewAppointments, pastAppointments } = useMemo(() => {
+    const upcoming: typeof appointments = [];
+    const review: typeof appointments = [];
+    const past: typeof appointments = [];
+    appointments.forEach((a) => {
+      const eff = getEffectiveStatus(a);
+      if (eff === "today" || eff === "upcoming") upcoming.push(a);
+      else if (eff === "pending_review") review.push(a);
+      else past.push(a);
+    });
+    const byDateDesc = (a: any, b: any) => (a.appointment_date < b.appointment_date ? 1 : -1);
+    return {
+      upcomingAppointments: upcoming,
+      needsReviewAppointments: review.sort(byDateDesc),
+      pastAppointments: past.sort(byDateDesc),
+    };
+  }, [appointments]);
+
+  const markStatus = (id: string, status: "completed" | "missed") =>
+    updateAppointmentStatus.mutate({ appointmentId: id, status });
+
 
   const isLoading = isDoctorsLoading || isAppointmentsLoading;
 
@@ -168,7 +173,26 @@ export default function Appointments() {
 
       {/* My Appointments Tab */}
       {tab === "my" && (
-        <div className="space-y-4">
+        <div className="space-y-5">
+          {/* Needs update (date passed, still open) */}
+          {needsReviewAppointments.length > 0 && (
+            <div className="space-y-2">
+              <h3 className="text-xs font-semibold text-amber-700 uppercase tracking-wider">
+                Needs Update · {needsReviewAppointments.length}
+              </h3>
+              {needsReviewAppointments.map((appt) => (
+                <AppointmentCard
+                  key={appt.id}
+                  appointment={appt}
+                  onCancel={() => {}}
+                  isCancelling={false}
+                  onMark={markStatus}
+                  isMarking={updateAppointmentStatus.isPending}
+                />
+              ))}
+            </div>
+          )}
+
           {/* Upcoming */}
           {upcomingAppointments.length > 0 && (
             <div className="space-y-2">
@@ -184,10 +208,10 @@ export default function Appointments() {
             </div>
           )}
 
-          {/* Past */}
+          {/* History */}
           {pastAppointments.length > 0 && (
             <div className="space-y-2">
-              <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Past & Cancelled</h3>
+              <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">History</h3>
               {pastAppointments.map((appt) => (
                 <AppointmentCard
                   key={appt.id}
@@ -198,6 +222,7 @@ export default function Appointments() {
               ))}
             </div>
           )}
+
 
           {/* Empty state */}
           {appointments.length === 0 && (
