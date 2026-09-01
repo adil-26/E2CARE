@@ -1,6 +1,5 @@
 import { useState } from "react";
-import { motion } from "framer-motion";
-import { Plus } from "lucide-react";
+import { ArrowDownRight, ArrowRight, ArrowUpRight, Plus } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,15 +12,11 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import type { VitalInsert } from "@/hooks/useVitals";
+import { classifyVital, vitalNormalRange, vitalTrend } from "@/lib/vitalRanges";
+import { formatDistanceToNow } from "date-fns";
+
 
 // ── Validation boundaries per vital type ──
 const vitalBounds: Record<string, { validate: (v: string) => string | null; hint: string }> = {
