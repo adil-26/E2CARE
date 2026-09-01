@@ -3,6 +3,7 @@ import { Users, Calendar, FileText, Pill, TrendingUp, AlertCircle, ShieldAlert, 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useDoctorProfile, useDoctorPatients } from "@/hooks/useDoctorPatients";
+import { useDoctorAppointments } from "@/hooks/useDoctorAppointments";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -25,24 +26,28 @@ export default function DoctorDashboard() {
     },
   });
 
-  const { data: recentPrescriptions = [] } = useQuery({
-    queryKey: ["doctor_recent_prescriptions", doctorProfile?.id],
+  const { data: prescriptionCount = 0 } = useQuery({
+    queryKey: ["doctor_prescription_count", doctorProfile?.id],
     enabled: !!doctorProfile?.id,
     queryFn: async () => {
-      const { data } = await supabase
+      const { count } = await supabase
         .from("prescriptions")
-        .select("*")
-        .eq("doctor_id", doctorProfile!.id)
-        .order("created_at", { ascending: false })
-        .limit(5);
-      return data || [];
+        .select("*", { count: "exact", head: true })
+        .eq("doctor_id", doctorProfile!.id);
+      return count || 0;
     },
   });
+
+  // Full appointment list (with patient profiles merged) for names on today's list
+  const { appointments } = useDoctorAppointments(doctorProfile?.id);
+  const todayWithNames = appointments.filter((a) =>
+    todayAppointments.some((t: any) => t.id === a.id)
+  );
 
   const stats = [
     { label: "Total Patients", value: patients.length, icon: Users, color: "text-primary" },
     { label: "Today's Appointments", value: todayAppointments.length, icon: Calendar, color: "text-secondary" },
-    { label: "Prescriptions", value: recentPrescriptions.length, icon: Pill, color: "text-info" },
+    { label: "Prescriptions", value: prescriptionCount, icon: Pill, color: "text-info" },
   ];
 
   const { data: globalAlerts = [] } = useQuery({
@@ -131,15 +136,22 @@ export default function DoctorDashboard() {
             <p className="py-6 text-center text-sm text-muted-foreground">No appointments today</p>
           ) : (
             <div className="space-y-2">
-              {todayAppointments.map((apt: any) => (
-                <div key={apt.id} className="flex items-center justify-between rounded-lg border px-4 py-3">
+              {(todayWithNames.length ? todayWithNames : todayAppointments).map((apt: any) => (
+                <div
+                  key={apt.id}
+                  className="flex cursor-pointer items-center justify-between rounded-lg border px-4 py-3 transition-colors hover:bg-muted/50"
+                  onClick={() => (window.location.href = `/doctor/patients/${apt.user_id}`)}
+                >
                   <div>
                     <p className="font-medium text-foreground">
-                      Patient
+                      {apt.patient?.full_name || "Patient"}
                     </p>
                     <p className="text-xs text-muted-foreground">{apt.reason || "General consultation"}</p>
                   </div>
-                  <span className="text-sm font-medium text-primary">{apt.start_time?.slice(0, 5)}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium text-primary">{apt.start_time?.slice(0, 5)}</span>
+                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                  </div>
                 </div>
               ))}
             </div>

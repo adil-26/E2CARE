@@ -10,6 +10,7 @@ import {
   MessageSquare,
   LogOut,
   Stethoscope,
+  CalendarClock,
 } from "lucide-react";
 import {
   Sidebar,
@@ -32,6 +33,7 @@ const navItems = [
   { title: "Messages", icon: MessageSquare, path: "/doctor/messages" },
   { title: "Appointments", icon: Calendar, path: "/doctor/appointments" },
   { title: "Prescriptions", icon: Pill, path: "/doctor/prescriptions" },
+  { title: "Availability", icon: CalendarClock, path: "/doctor/availability" },
 ];
 
 export default function DoctorSidebar() {
