@@ -334,6 +334,32 @@ export function useAppointments() {
     },
   });
 
+  // Mark a past appointment as completed / missed
+  const updateAppointmentStatus = useMutation({
+    mutationFn: async (params: { appointmentId: string; status: "completed" | "missed" | "upcoming" }) => {
+      if (!user) throw new Error("Not authenticated");
+      const { error } = await supabase
+        .from("appointments")
+        .update({ status: params.status })
+        .eq("id", params.appointmentId);
+      if (error) throw error;
+      return params.status;
+    },
+    onSuccess: (status) => {
+      queryClient.invalidateQueries({ queryKey: ["appointments"] });
+      toast({
+        title: status === "completed" ? "Marked as Attended ✅" : "Marked as Missed",
+        description:
+          status === "completed"
+            ? "This consultation is saved in your history."
+            : "We've recorded that you missed this appointment.",
+      });
+    },
+    onError: (err) => {
+      toast({ title: "Update Failed", description: err.message, variant: "destructive" });
+    },
+  });
+
   return {
     doctors: doctorsQuery.data || [],
     isDoctorsLoading: doctorsQuery.isLoading,
@@ -343,5 +369,7 @@ export function useAppointments() {
     useBookedSlots,
     bookAppointment,
     cancelAppointment,
+    updateAppointmentStatus,
   };
 }
+
