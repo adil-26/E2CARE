@@ -1,6 +1,5 @@
 import { useState } from "react";
-import { motion } from "framer-motion";
-import { Plus } from "lucide-react";
+import { ArrowDownRight, ArrowRight, ArrowUpRight, Plus } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,15 +12,11 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import type { VitalInsert } from "@/hooks/useVitals";
+import { classifyVital, vitalNormalRange, vitalTrend } from "@/lib/vitalRanges";
+import { formatDistanceToNow } from "date-fns";
+
 
 // ── Validation boundaries per vital type ──
 const vitalBounds: Record<string, { validate: (v: string) => string | null; hint: string }> = {
@@ -91,6 +86,8 @@ interface VitalCardProps {
   icon: LucideIcon;
   status: "normal" | "attention" | "critical";
   vitalType: string;
+  recordedAt?: string | null;
+  previousValue?: string | null;
   onLog: (vital: VitalInsert) => void;
   isLogging?: boolean;
 }
@@ -101,6 +98,18 @@ const statusStyles = {
   critical: "text-destructive bg-destructive/10 border-destructive/20",
 };
 
+const statusLabels = {
+  normal: "In range",
+  attention: "Watch",
+  critical: "Critical",
+};
+
+const accentBars = {
+  normal: "bg-success",
+  attention: "bg-warning",
+  critical: "bg-destructive",
+};
+
 export default function VitalCard({
   label,
   value,
@@ -108,24 +117,33 @@ export default function VitalCard({
   icon: Icon,
   status,
   vitalType,
+  recordedAt,
+  previousValue,
   onLog,
   isLogging,
 }: VitalCardProps) {
   const [open, setOpen] = useState(false);
   const [newValue, setNewValue] = useState("");
-  const [newStatus, setNewStatus] = useState<"normal" | "attention" | "critical">("normal");
   const [validationError, setValidationError] = useState<string | null>(null);
   const { toast } = useToast();
 
   const bounds = vitalBounds[vitalType];
+  const normalRange = vitalNormalRange(vitalType);
+  const hasReading = !!value && value !== "—";
+  const trend = hasReading ? vitalTrend(vitalType, value, previousValue ?? undefined) : null;
+  const TrendIcon = trend === "up" ? ArrowUpRight : trend === "down" ? ArrowDownRight : ArrowRight;
+
+  const previewStatus = newValue.trim()
+    ? classifyVital(vitalType, newValue.trim(), "normal")
+    : null;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newValue.trim()) return;
+    const raw = newValue.trim();
+    if (!raw) return;
 
-    // Validate input
     if (bounds) {
-      const error = bounds.validate(newValue.trim());
+      const error = bounds.validate(raw);
       if (error) {
         setValidationError(error);
         toast({ title: "Invalid Reading", description: error, variant: "destructive" });
@@ -136,29 +154,52 @@ export default function VitalCard({
     setValidationError(null);
     onLog({
       vital_type: vitalType,
-      value: newValue.trim(),
+      value: raw,
       unit,
-      status: newStatus,
+      // Status is derived from medical ranges, never self-reported
+      status: classifyVital(vitalType, raw, "normal"),
     });
     setNewValue("");
-    setNewStatus("normal");
     setOpen(false);
   };
 
   return (
-    <Card className="group relative shadow-sm transition-shadow hover:shadow-md">
-      <CardContent className="p-4">
+    <Card className="group relative overflow-hidden shadow-sm transition-shadow hover:shadow-md">
+      {hasReading && (
+        <span className={`absolute left-0 top-0 h-full w-1 ${accentBars[status]}`} aria-hidden />
+      )}
+      <CardContent className="p-4 pl-5">
         <div className="mb-2 flex items-center justify-between">
           <Icon className="h-4 w-4 text-muted-foreground" />
-          <span
-            className={`rounded-full border px-2 py-0.5 text-[10px] font-medium ${statusStyles[status]}`}
-          >
-            {status}
-          </span>
+          {hasReading && (
+            <span
+              className={`rounded-full border px-2 py-0.5 text-[10px] font-medium ${statusStyles[status]}`}
+            >
+              {statusLabels[status]}
+            </span>
+          )}
         </div>
-        <p className="font-display text-xl font-bold text-foreground">{value}</p>
+
+        <div className="flex items-baseline gap-1.5">
+          <p className="font-display text-xl font-bold text-foreground">{value}</p>
+          {trend && trend !== "flat" && (
+            <TrendIcon
+              className={`h-3.5 w-3.5 ${
+                status === "normal" ? "text-muted-foreground" : "text-warning"
+              }`}
+            />
+          )}
+        </div>
         <p className="text-xs text-muted-foreground">
           {label} · {unit}
+        </p>
+
+        <p className="mt-2 text-[10px] leading-tight text-muted-foreground/80">
+          {hasReading && recordedAt
+            ? `Updated ${formatDistanceToNow(new Date(recordedAt), { addSuffix: true })}`
+            : normalRange
+              ? `Healthy: ${normalRange}`
+              : "No reading yet"}
         </p>
 
         <Dialog open={open} onOpenChange={setOpen}>
@@ -166,7 +207,7 @@ export default function VitalCard({
             <Button
               size="icon"
               variant="ghost"
-              className="absolute right-2 top-2 h-6 w-6 opacity-0 transition-opacity group-hover:opacity-100"
+              className="absolute right-2 top-2 h-6 w-6 opacity-60 transition-opacity group-hover:opacity-100"
             >
               <Plus className="h-3.5 w-3.5" />
             </Button>
@@ -195,19 +236,25 @@ export default function VitalCard({
                   <p className="text-[11px] text-muted-foreground">{bounds.hint}</p>
                 )}
               </div>
-              <div className="space-y-2">
-                <Label>Status</Label>
-                <Select value={newStatus} onValueChange={(v) => setNewStatus(v as any)}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="normal">Normal</SelectItem>
-                    <SelectItem value="attention">Attention</SelectItem>
-                    <SelectItem value="critical">Critical</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+
+              {normalRange && (
+                <div className="rounded-lg border border-border bg-muted/40 p-3 text-xs">
+                  <p className="text-muted-foreground">
+                    Healthy range: <span className="font-medium text-foreground">{normalRange}</span>
+                  </p>
+                  {previewStatus && !validationError && (
+                    <p className="mt-1.5">
+                      This reading is classified as{" "}
+                      <span
+                        className={`rounded-full border px-2 py-0.5 text-[10px] font-medium ${statusStyles[previewStatus]}`}
+                      >
+                        {statusLabels[previewStatus]}
+                      </span>
+                    </p>
+                  )}
+                </div>
+              )}
+
               <Button type="submit" className="w-full" disabled={isLogging}>
                 Save Reading
               </Button>
@@ -218,3 +265,4 @@ export default function VitalCard({
     </Card>
   );
 }
+

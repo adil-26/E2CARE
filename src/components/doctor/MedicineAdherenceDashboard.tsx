@@ -17,7 +17,15 @@ interface MedicineLog {
   created_at: string;
 }
 
-export function MedicineAdherenceDashboard({ patientId }: { patientId: string }) {
+export function MedicineAdherenceDashboard({
+  patientId,
+  perspective = 'doctor',
+}: {
+  patientId: string;
+  /** 'patient' renders self-facing copy, 'doctor' renders clinician-facing copy */
+  perspective?: 'patient' | 'doctor';
+}) {
+  const isPatient = perspective === 'patient';
   const { data: logs, isLoading } = useQuery({
     queryKey: ['medicine-logs', patientId],
     queryFn: async () => {
@@ -53,7 +61,9 @@ export function MedicineAdherenceDashboard({ patientId }: { patientId: string })
           </div>
           <h3 className="text-lg font-semibold">No Adherence Data Yet</h3>
           <p className="text-sm text-muted-foreground text-center max-w-sm mt-1">
-            We haven't received any daily routine logs from this patient. Once they start logging their medications, adherence trends will appear here.
+            {isPatient
+              ? "You haven't logged any doses yet. Mark your medicines as taken and your adherence trend will show up here."
+              : "We haven't received any medication logs from this patient. Once they start logging their medications, adherence trends will appear here."}
           </p>
         </CardContent>
       </Card>
@@ -76,9 +86,13 @@ export function MedicineAdherenceDashboard({ patientId }: { patientId: string })
           <CardHeader className="pb-2">
             <CardTitle className="text-lg flex items-center gap-2">
               <CheckCircle2 className="w-5 h-5 text-primary" />
-              30-Day Compliance Score
+              {isPatient ? 'Your 30-Day Adherence' : '30-Day Compliance Score'}
             </CardTitle>
-            <CardDescription>Based on {totalLogs} scheduled medication events</CardDescription>
+            <CardDescription>
+              {isPatient
+                ? `Based on your last ${totalLogs} scheduled doses`
+                : `Based on ${totalLogs} scheduled medication events`}
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="flex items-end gap-4 mb-4">
@@ -87,7 +101,11 @@ export function MedicineAdherenceDashboard({ patientId }: { patientId: string })
               </span>
               <div className="pb-1 text-sm text-muted-foreground flex items-center gap-1">
                 {complianceScore >= 80 ? <TrendingUp className="w-4 h-4 text-green-500" /> : <TrendingDown className="w-4 h-4 text-destructive" />}
-                {complianceScore >= 80 ? 'Excellent adherence' : complianceScore >= 50 ? 'Needs attention' : 'Critical failure risk'}
+                {complianceScore >= 80
+                  ? isPatient ? "You're on track" : 'Excellent adherence'
+                  : complianceScore >= 50
+                    ? isPatient ? 'A few doses slipped' : 'Needs attention'
+                    : isPatient ? 'Many doses missed' : 'Critical failure risk'}
               </div>
             </div>
             <Progress value={complianceScore} className={`h-3 ${progressColor}`} />
@@ -110,7 +128,7 @@ export function MedicineAdherenceDashboard({ patientId }: { patientId: string })
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-semibold flex items-center gap-2 text-destructive">
               <AlertCircle className="w-4 h-4" />
-              Recent Misses
+              {isPatient ? 'Doses You Missed' : 'Recent Misses'}
             </CardTitle>
           </CardHeader>
           <CardContent className="px-4 pb-4">

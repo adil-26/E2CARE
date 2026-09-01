@@ -144,7 +144,7 @@ export default function MedicineReminder({ medications, onAdd, isAdding, onLog, 
 
       {user?.id && (
         <div className="mb-4">
-          <MedicineAdherenceDashboard patientId={user.id} />
+          <MedicineAdherenceDashboard patientId={user.id} perspective="patient" />
         </div>
       )}
 
