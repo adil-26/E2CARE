@@ -25,12 +25,12 @@ export default function DailyRoutineTracker({ routine, onUpdate }: DailyRoutineT
     <div className="grid gap-4 md:grid-cols-2">
       {/* Hydration Column */}
       <Card className="overflow-hidden border-none bg-blue-50/50 shadow-sm dark:bg-blue-950/20">
-        <CardContent className="flex h-full flex-col items-center justify-center p-6 text-center">
-          <div className="mb-4 flex items-center gap-2 text-lg font-semibold text-blue-900 dark:text-blue-100">
+        <CardContent className="flex h-full flex-col items-center justify-between gap-3 p-5 text-center">
+          <div className="flex items-center gap-2 text-lg font-semibold text-blue-900 dark:text-blue-100">
             <GlassWater className="h-5 w-5" /> {t.routine.hydration}
           </div>
 
-          <div className="relative mb-6 h-40 w-20 overflow-hidden rounded-b-xl rounded-t-sm border-4 border-blue-200 bg-white/50 backdrop-blur-sm dark:border-blue-800 dark:bg-black/20">
+          <div className="relative h-32 w-20 overflow-hidden rounded-b-xl rounded-t-sm border-4 border-blue-200 bg-white/50 backdrop-blur-sm dark:border-blue-800 dark:bg-black/20">
             <motion.div
               className="absolute bottom-0 w-full bg-blue-400 dark:bg-blue-500"
               initial={{ height: "0%" }}
@@ -39,20 +39,20 @@ export default function DailyRoutineTracker({ routine, onUpdate }: DailyRoutineT
             />
           </div>
 
-          <div className="mb-2 text-3xl font-bold text-blue-600 dark:text-blue-400">
+          <div className="text-3xl font-bold text-blue-600 dark:text-blue-400">
             {routine.water_glasses}<span className="text-lg text-muted-foreground">/{waterTarget}</span>
           </div>
-          <p className="mb-6 text-sm text-blue-600/60 dark:text-blue-400/60">{t.routine.glasses}</p>
+          <p className="text-sm text-blue-600/60 dark:text-blue-400/60">{t.routine.glasses}</p>
 
           {routine.water_glasses < waterTarget && (
-            <div className="mb-6 rounded-full bg-amber-100 px-3 py-1 text-xs font-medium text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+            <div className="rounded-full bg-amber-100 px-3 py-1 text-xs font-medium text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
               ⚠️ {waterTarget - routine.water_glasses} {t.routine.behind}
             </div>
           )}
 
           <Button
-            variant="link"
-            className="text-blue-500 hover:text-blue-600 dark:text-blue-400"
+            variant="secondary"
+            className="w-full bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-900/40 dark:text-blue-200 hover:text-blue-600 dark:text-blue-400"
             onClick={() => handleUpdate("water_glasses", routine.water_glasses + 1)}
           >
             {t.routine.tapToDrink}
