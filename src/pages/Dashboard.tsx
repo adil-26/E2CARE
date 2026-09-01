@@ -218,6 +218,9 @@ export default function Dashboard() {
               icon={vital.icon}
               status={vital.status}
               vitalType={vital.type}
+              recordedAt={vital.recordedAt}
+              previousValue={vital.previousValue}
+
               onLog={(v) => addVital.mutate(v)}
               isLogging={addVital.isPending}
             />
