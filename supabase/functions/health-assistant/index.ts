@@ -58,6 +58,7 @@ Deno.serve(async (req) => {
       historyRes,
       reportsRes,
       routineRes,
+      prescriptionsRes,
     ] = await Promise.all([
       adminClient.from("profiles").select("*").eq("user_id", user.id).maybeSingle(),
       adminClient.from("vitals").select("*").eq("user_id", user.id).order("recorded_at", { ascending: false }).limit(20),
@@ -65,6 +66,12 @@ Deno.serve(async (req) => {
       adminClient.from("medical_history").select("*").eq("user_id", user.id).maybeSingle(),
       adminClient.from("medical_reports").select("id, title, report_type, report_date, ai_summary, extracted_data, status").eq("user_id", user.id).eq("status", "completed").order("report_date", { ascending: false }).limit(10),
       adminClient.from("daily_routines").select("*").eq("user_id", user.id).order("routine_date", { ascending: false }).limit(7),
+      adminClient
+        .from("prescriptions")
+        .select("id, diagnosis, notes, medicines, status, created_at")
+        .eq("patient_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(10),
     ]);
 
     // Build medical context
@@ -72,7 +79,8 @@ Deno.serve(async (req) => {
     const vitals = vitalsRes.data || [];
     const medications = medsRes.data || [];
     const history = historyRes.data;
-    const reports = reportsRes.data || [];
+    const reports = (reportsRes.data || []).filter((r: any) => true);
+    const prescriptions = prescriptionsRes.data || [];
     const routines = routineRes.data || [];
 
     let medicalContext = "## Patient Medical Context\n\n";

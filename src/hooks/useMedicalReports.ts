@@ -157,6 +157,7 @@ export function useMedicalReports() {
         .from("medical_reports")
         .delete()
         .eq("id", reportId)
+        .eq("user_id", user!.id)
         .select("id");
       if (error) throw error;
       if (data && data.length === 0) {
