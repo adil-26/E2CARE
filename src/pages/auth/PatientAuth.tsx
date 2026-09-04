@@ -11,9 +11,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { User, Mail, Lock, Loader2, ArrowLeft, Gift, Eye, EyeOff, CheckCircle2, ShieldCheck } from "lucide-react";
+import { User, Mail, Lock, Loader2, ArrowLeft, Gift, Eye, EyeOff, CheckCircle2, ShieldCheck, Phone } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { z } from "zod";
+import { supabase } from "@/integrations/supabase/client";
+
 
 const emailSchema = z.string().email("Please enter a valid email address");
 const passwordSchema = z.string().min(6, "Password must be at least 6 characters");
@@ -119,6 +121,15 @@ export default function PatientAuth() {
   const [newPassword, setNewPassword] = useState("");
   const [showNewPw, setShowNewPw] = useState(false);
 
+  // phone (SMS OTP) sign-in flow
+  const [loginMethod, setLoginMethod] = useState<"email" | "phone">("email");
+  const [phone, setPhone] = useState("");
+  const [phoneOtp, setPhoneOtp] = useState("");
+  const [phoneStep, setPhoneStep] = useState<"number" | "code">("number");
+  const [resendIn, setResendIn] = useState(0);
+
+
+
   const { signIn, signUp, user, sendOtp, verifyOtp, updatePassword } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -128,7 +139,76 @@ export default function PatientAuth() {
     if (user && role) navigate("/dashboard", { replace: true });
   }, [user, role, navigate]);
 
+  // resend cooldown ticker
+  useEffect(() => {
+    if (resendIn <= 0) return;
+    const id = setTimeout(() => setResendIn(s => s - 1), 1000);
+    return () => clearTimeout(id);
+  }, [resendIn]);
+
+  // Normalise to E.164 (defaults to +91 for bare 10-digit Indian numbers)
+  const toE164 = (raw: string) => {
+    const trimmed = raw.replace(/[\s()-]/g, "");
+    if (trimmed.startsWith("+")) return trimmed;
+    const digits = trimmed.replace(/\D/g, "");
+    if (digits.length === 10) return `+91${digits}`;
+    return `+${digits}`;
+  };
+
+  const handleSendPhoneOtp = async () => {
+    const e164 = toE164(phone);
+    if (!/^\+[1-9]\d{7,14}$/.test(e164)) {
+      toast({ title: "Invalid phone number", description: "Use a full number with country code, e.g. +919876543210", variant: "destructive" });
+      return;
+    }
+    setIsLoading(true);
+    const { error } = await supabase.auth.signInWithOtp({ phone: e164 });
+    setIsLoading(false);
+    if (error) {
+      toast({
+        title: "Could not send OTP",
+        description: error.message.toLowerCase().includes("provider")
+          ? "SMS sign-in is not enabled yet. Add your SMS provider credentials in the backend auth settings."
+          : error.message,
+        variant: "destructive",
+      });
+      return;
+    }
+    setPhoneOtp("");
+    setPhoneStep("code");
+    setResendIn(30);
+    toast({ title: "Code sent", description: `A 6-digit code was sent to ${e164}` });
+  };
+
+  const handleVerifyPhoneOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (phoneOtp.length < 6) {
+      toast({ title: "Enter all 6 digits", variant: "destructive" });
+      return;
+    }
+    const e164 = toE164(phone);
+    setIsLoading(true);
+    const { data, error } = await supabase.auth.verifyOtp({ phone: e164, token: phoneOtp, type: "sms" });
+    if (error) {
+      setIsLoading(false);
+      toast({ title: "Invalid code", description: "The OTP is incorrect or has expired.", variant: "destructive" });
+      return;
+    }
+    // keep the phone on the patient profile
+    if (data.user) {
+      await supabase.from("profiles").update({ phone: e164 }).eq("user_id", data.user.id);
+    }
+    setIsLoading(false);
+  };
+
+  const resetPhoneFlow = () => {
+    setPhoneStep("number");
+    setPhoneOtp("");
+    setResendIn(0);
+  };
+
   // ── handlers ──────────────────────────────────────────────────────────
+
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -416,6 +496,78 @@ export default function PatientAuth() {
                     <motion.div key="login" initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 30 }} transition={{ duration: 0.2 }}>
                       <CardTitle className="mb-1 text-lg">Welcome back</CardTitle>
                       <CardDescription className="mb-4">Sign in to your patient account</CardDescription>
+
+                      {/* Email / Phone method switch */}
+                      <div className="mb-4 grid grid-cols-2 gap-1 rounded-lg bg-muted p-1">
+                        <button
+                          type="button"
+                          onClick={() => setLoginMethod("email")}
+                          className={`flex items-center justify-center gap-1.5 rounded-md py-1.5 text-xs font-medium transition-colors ${loginMethod === "email" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground"}`}
+                        >
+                          <Mail className="h-3.5 w-3.5" /> Email
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => { setLoginMethod("phone"); resetPhoneFlow(); }}
+                          className={`flex items-center justify-center gap-1.5 rounded-md py-1.5 text-xs font-medium transition-colors ${loginMethod === "phone" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground"}`}
+                        >
+                          <Phone className="h-3.5 w-3.5" /> Phone OTP
+                        </button>
+                      </div>
+
+                      {loginMethod === "phone" ? (
+                        phoneStep === "number" ? (
+                          <form onSubmit={e => { e.preventDefault(); handleSendPhoneOtp(); }} className="space-y-4">
+                            <div className="space-y-2">
+                              <Label>Mobile number</Label>
+                              <div className="relative">
+                                <Phone className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                                <Input
+                                  type="tel"
+                                  inputMode="tel"
+                                  placeholder="+91 98765 43210"
+                                  className="pl-10"
+                                  value={phone}
+                                  onChange={e => setPhone(e.target.value)}
+                                  required
+                                />
+                              </div>
+                              <p className="text-[11px] text-muted-foreground">
+                                Include the country code. A 6-digit code will be sent by SMS.
+                              </p>
+                            </div>
+                            <Button type="submit" className="w-full" disabled={isLoading}>
+                              {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Send OTP
+                            </Button>
+                          </form>
+                        ) : (
+                          <form onSubmit={handleVerifyPhoneOtp} className="space-y-5">
+                            <div className="text-center">
+                              <ShieldCheck className="mx-auto mb-2 h-6 w-6 text-primary" />
+                              <p className="text-sm text-muted-foreground">
+                                Enter the code sent to <span className="font-medium text-foreground">{toE164(phone)}</span>
+                              </p>
+                            </div>
+                            <OtpInput value={phoneOtp} onChange={setPhoneOtp} />
+                            <Button type="submit" className="w-full" disabled={isLoading || phoneOtp.length < 6}>
+                              {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Verify & Sign In
+                            </Button>
+                            <div className="flex items-center justify-between text-xs text-muted-foreground">
+                              <button type="button" className="hover:underline" onClick={resetPhoneFlow}>
+                                ← Change number
+                              </button>
+                              <button
+                                type="button"
+                                disabled={resendIn > 0}
+                                className="text-primary hover:underline disabled:text-muted-foreground disabled:no-underline"
+                                onClick={handleSendPhoneOtp}
+                              >
+                                {resendIn > 0 ? `Resend in ${resendIn}s` : "Resend code"}
+                              </button>
+                            </div>
+                          </form>
+                        )
+                      ) : (
                       <form onSubmit={handleLogin} className="space-y-4">
                         <div className="space-y-2">
                           <Label>Email</Label>
@@ -453,6 +605,8 @@ export default function PatientAuth() {
                           {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Sign In
                         </Button>
                       </form>
+                      )}
+
                       <div className="relative my-4">
                         <Separator />
                         <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-card px-2 text-xs text-muted-foreground">or</span>
