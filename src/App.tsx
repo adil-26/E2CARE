@@ -41,6 +41,7 @@ import Referrals from "@/pages/Referrals";
 import SettingsPage from "@/pages/SettingsPage";
 import ComparisonAnalysis from "@/pages/ComparisonAnalysis";
 import TreatmentPlans from "@/pages/TreatmentPlans";
+import DietPlan from "@/pages/DietPlan";
 
 // Doctor pages
 import DoctorDashboard from "@/pages/doctor/DoctorDashboard";
@@ -127,6 +128,7 @@ const App = () => (
                 <Route path="/settings" element={<SettingsPage />} />
                 <Route path="/comparison" element={<ComparisonAnalysis />} />
                 <Route path="/treatments" element={<TreatmentPlans />} />
+                <Route path="/diet-plan" element={<DietPlan />} />
               </Route>
 
               {/* Doctor routes */}

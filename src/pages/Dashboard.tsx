@@ -173,6 +173,7 @@ export default function Dashboard() {
             { label: t.common.upload, icon: Upload, path: "/records" },
             { label: "ID Card", icon: QrCode, isIdCard: true },
             { label: "Plans", icon: Leaf, path: "/treatments" },
+            { label: "Diet", icon: Apple, path: "/diet-plan" },
             { label: t.nav.aiChat, icon: Bot, path: "/chat" },
           ].map((action) => {
             const btn = (
