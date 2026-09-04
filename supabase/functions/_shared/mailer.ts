@@ -13,9 +13,13 @@ export async function sendMail(opts: { to: string; subject: string; html: string
     connection: { hostname: host, port, tls: port === 465, auth: { username, password } },
   })
 
+  const recipient = opts.to.trim()
+  console.log('sending mail to:', recipient)
+
   await client.send({
     from: `${fromName} <${username}>`,
-    to: opts.to,
+    to: [recipient],
+    replyTo: username,
     subject: opts.subject,
     content: opts.text ?? 'This email requires an HTML capable client.',
     html: opts.html,
