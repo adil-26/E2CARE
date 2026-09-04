@@ -66,14 +66,25 @@ export function useAdminAnalytics() {
         countOf("profiles", (q) => q.gte("created_at", weekAgo)),
       ]);
 
+      const rows = appointmentRows as any[];
+      const summary = summarizeAppointments(rows);
+
       return {
         patients,
         doctors,
         pendingDoctors,
         approvedDoctors,
         rejectedDoctors,
-        appointmentRows,
+        appointments: summary.total,
+        appointmentsToday: rows.filter((r) => r.appointment_date === today).length,
+        upcoming: summary.upcoming,
+        todayScheduled: summary.today,
+        pendingReview: summary.pending_review,
+        completed: summary.completed,
+        missed: summary.missed,
+        cancelled: summary.cancelled,
         reports,
+
         prescriptions,
         conversations,
         unresolvedAlerts,
