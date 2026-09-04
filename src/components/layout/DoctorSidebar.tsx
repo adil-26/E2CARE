@@ -11,6 +11,8 @@ import {
   LogOut,
   Stethoscope,
   CalendarClock,
+  BarChart3,
+  UserCog,
 } from "lucide-react";
 import {
   Sidebar,
@@ -34,6 +36,8 @@ const navItems = [
   { title: "Appointments", icon: Calendar, path: "/doctor/appointments" },
   { title: "Prescriptions", icon: Pill, path: "/doctor/prescriptions" },
   { title: "Availability", icon: CalendarClock, path: "/doctor/availability" },
+  { title: "Analytics", icon: BarChart3, path: "/doctor/analytics" },
+  { title: "My Profile", icon: UserCog, path: "/doctor/profile" },
 ];
 
 export default function DoctorSidebar() {
