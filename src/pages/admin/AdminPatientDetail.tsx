@@ -16,6 +16,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import PatientMedicalHistory from "@/components/doctor/PatientMedicalHistory";
 import { format } from "date-fns";
+import { getEffectiveStatus, STATUS_BADGE, STATUS_LABEL } from "@/lib/appointmentStatus";
 import { useToast } from "@/hooks/use-toast";
 
 function useAdminPatientData(userId?: string) {
@@ -361,8 +362,8 @@ export default function AdminPatientDetail() {
                     </p>
                     {a.reason && <p className="text-xs text-muted-foreground">{a.reason}</p>}
                   </div>
-                  <Badge variant={a.status === "completed" ? "default" : a.status === "cancelled" ? "destructive" : "secondary"}>
-                    {a.status}
+                  <Badge variant="outline" className={`border ${STATUS_BADGE[getEffectiveStatus(a)]}`}>
+                    {STATUS_LABEL[getEffectiveStatus(a)]}
                   </Badge>
                 </CardContent>
               </Card>
