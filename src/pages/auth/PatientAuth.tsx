@@ -139,7 +139,76 @@ export default function PatientAuth() {
     if (user && role) navigate("/dashboard", { replace: true });
   }, [user, role, navigate]);
 
+  // resend cooldown ticker
+  useEffect(() => {
+    if (resendIn <= 0) return;
+    const id = setTimeout(() => setResendIn(s => s - 1), 1000);
+    return () => clearTimeout(id);
+  }, [resendIn]);
+
+  // Normalise to E.164 (defaults to +91 for bare 10-digit Indian numbers)
+  const toE164 = (raw: string) => {
+    const trimmed = raw.replace(/[\s()-]/g, "");
+    if (trimmed.startsWith("+")) return trimmed;
+    const digits = trimmed.replace(/\D/g, "");
+    if (digits.length === 10) return `+91${digits}`;
+    return `+${digits}`;
+  };
+
+  const handleSendPhoneOtp = async () => {
+    const e164 = toE164(phone);
+    if (!/^\+[1-9]\d{7,14}$/.test(e164)) {
+      toast({ title: "Invalid phone number", description: "Use a full number with country code, e.g. +919876543210", variant: "destructive" });
+      return;
+    }
+    setIsLoading(true);
+    const { error } = await supabase.auth.signInWithOtp({ phone: e164 });
+    setIsLoading(false);
+    if (error) {
+      toast({
+        title: "Could not send OTP",
+        description: error.message.toLowerCase().includes("provider")
+          ? "SMS sign-in is not enabled yet. Add your SMS provider credentials in the backend auth settings."
+          : error.message,
+        variant: "destructive",
+      });
+      return;
+    }
+    setPhoneOtp("");
+    setPhoneStep("code");
+    setResendIn(30);
+    toast({ title: "Code sent", description: `A 6-digit code was sent to ${e164}` });
+  };
+
+  const handleVerifyPhoneOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (phoneOtp.length < 6) {
+      toast({ title: "Enter all 6 digits", variant: "destructive" });
+      return;
+    }
+    const e164 = toE164(phone);
+    setIsLoading(true);
+    const { data, error } = await supabase.auth.verifyOtp({ phone: e164, token: phoneOtp, type: "sms" });
+    if (error) {
+      setIsLoading(false);
+      toast({ title: "Invalid code", description: "The OTP is incorrect or has expired.", variant: "destructive" });
+      return;
+    }
+    // keep the phone on the patient profile
+    if (data.user) {
+      await supabase.from("profiles").update({ phone: e164 }).eq("user_id", data.user.id);
+    }
+    setIsLoading(false);
+  };
+
+  const resetPhoneFlow = () => {
+    setPhoneStep("number");
+    setPhoneOtp("");
+    setResendIn(0);
+  };
+
   // ── handlers ──────────────────────────────────────────────────────────
+
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
