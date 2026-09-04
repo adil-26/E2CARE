@@ -11,9 +11,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { User, Mail, Lock, Loader2, ArrowLeft, Gift, Eye, EyeOff, CheckCircle2, ShieldCheck } from "lucide-react";
+import { User, Mail, Lock, Loader2, ArrowLeft, Gift, Eye, EyeOff, CheckCircle2, ShieldCheck, Phone } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { z } from "zod";
+import { supabase } from "@/integrations/supabase/client";
+
 
 const emailSchema = z.string().email("Please enter a valid email address");
 const passwordSchema = z.string().min(6, "Password must be at least 6 characters");
