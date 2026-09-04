@@ -79,7 +79,7 @@ Deno.serve(async (req) => {
     const vitals = vitalsRes.data || [];
     const medications = medsRes.data || [];
     const history = historyRes.data;
-    const reports = (reportsRes.data || []).filter((r: any) => true);
+    const reports = reportsRes.data || [];
     const prescriptions = prescriptionsRes.data || [];
     const routines = routineRes.data || [];
 
