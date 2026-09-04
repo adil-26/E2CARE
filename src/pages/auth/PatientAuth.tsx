@@ -496,6 +496,78 @@ export default function PatientAuth() {
                     <motion.div key="login" initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 30 }} transition={{ duration: 0.2 }}>
                       <CardTitle className="mb-1 text-lg">Welcome back</CardTitle>
                       <CardDescription className="mb-4">Sign in to your patient account</CardDescription>
+
+                      {/* Email / Phone method switch */}
+                      <div className="mb-4 grid grid-cols-2 gap-1 rounded-lg bg-muted p-1">
+                        <button
+                          type="button"
+                          onClick={() => setLoginMethod("email")}
+                          className={`flex items-center justify-center gap-1.5 rounded-md py-1.5 text-xs font-medium transition-colors ${loginMethod === "email" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground"}`}
+                        >
+                          <Mail className="h-3.5 w-3.5" /> Email
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => { setLoginMethod("phone"); resetPhoneFlow(); }}
+                          className={`flex items-center justify-center gap-1.5 rounded-md py-1.5 text-xs font-medium transition-colors ${loginMethod === "phone" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground"}`}
+                        >
+                          <Phone className="h-3.5 w-3.5" /> Phone OTP
+                        </button>
+                      </div>
+
+                      {loginMethod === "phone" ? (
+                        phoneStep === "number" ? (
+                          <form onSubmit={e => { e.preventDefault(); handleSendPhoneOtp(); }} className="space-y-4">
+                            <div className="space-y-2">
+                              <Label>Mobile number</Label>
+                              <div className="relative">
+                                <Phone className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                                <Input
+                                  type="tel"
+                                  inputMode="tel"
+                                  placeholder="+91 98765 43210"
+                                  className="pl-10"
+                                  value={phone}
+                                  onChange={e => setPhone(e.target.value)}
+                                  required
+                                />
+                              </div>
+                              <p className="text-[11px] text-muted-foreground">
+                                Include the country code. A 6-digit code will be sent by SMS.
+                              </p>
+                            </div>
+                            <Button type="submit" className="w-full" disabled={isLoading}>
+                              {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Send OTP
+                            </Button>
+                          </form>
+                        ) : (
+                          <form onSubmit={handleVerifyPhoneOtp} className="space-y-5">
+                            <div className="text-center">
+                              <ShieldCheck className="mx-auto mb-2 h-6 w-6 text-primary" />
+                              <p className="text-sm text-muted-foreground">
+                                Enter the code sent to <span className="font-medium text-foreground">{toE164(phone)}</span>
+                              </p>
+                            </div>
+                            <OtpInput value={phoneOtp} onChange={setPhoneOtp} />
+                            <Button type="submit" className="w-full" disabled={isLoading || phoneOtp.length < 6}>
+                              {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Verify & Sign In
+                            </Button>
+                            <div className="flex items-center justify-between text-xs text-muted-foreground">
+                              <button type="button" className="hover:underline" onClick={resetPhoneFlow}>
+                                ← Change number
+                              </button>
+                              <button
+                                type="button"
+                                disabled={resendIn > 0}
+                                className="text-primary hover:underline disabled:text-muted-foreground disabled:no-underline"
+                                onClick={handleSendPhoneOtp}
+                              >
+                                {resendIn > 0 ? `Resend in ${resendIn}s` : "Resend code"}
+                              </button>
+                            </div>
+                          </form>
+                        )
+                      ) : (
                       <form onSubmit={handleLogin} className="space-y-4">
                         <div className="space-y-2">
                           <Label>Email</Label>
@@ -533,6 +605,8 @@ export default function PatientAuth() {
                           {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Sign In
                         </Button>
                       </form>
+                      )}
+
                       <div className="relative my-4">
                         <Separator />
                         <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-card px-2 text-xs text-muted-foreground">or</span>
