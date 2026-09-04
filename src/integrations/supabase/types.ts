@@ -150,6 +150,39 @@ export type Database = {
         }
         Relationships: []
       }
+      clinical_notes: {
+        Row: {
+          category: string
+          created_at: string
+          doctor_user_id: string
+          id: string
+          note: string
+          patient_id: string
+          updated_at: string
+          visit_date: string
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          doctor_user_id: string
+          id?: string
+          note: string
+          patient_id: string
+          updated_at?: string
+          visit_date?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          doctor_user_id?: string
+          id?: string
+          note?: string
+          patient_id?: string
+          updated_at?: string
+          visit_date?: string
+        }
+        Relationships: []
+      }
       condition_logs: {
         Row: {
           condition_type: string
