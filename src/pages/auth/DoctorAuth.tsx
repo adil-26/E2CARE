@@ -19,6 +19,7 @@ import { useQuery } from "@tanstack/react-query";
 
 const emailSchema = z.string().email("Please enter a valid email address");
 const passwordSchema = z.string().min(6, "Password must be at least 6 characters");
+
 const nameSchema = z.string().min(2, "Name must be at least 2 characters");
 
 const specializations = [
