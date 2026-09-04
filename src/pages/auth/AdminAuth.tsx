@@ -18,6 +18,7 @@ export default function AdminAuth() {
   const [isLoading, setIsLoading] = useState(false);
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
+  const [forgotOpen, setForgotOpen] = useState(false);
   const { signIn, user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
