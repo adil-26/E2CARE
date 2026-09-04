@@ -114,117 +114,145 @@ export default function BookingDialog({ doctor, open, onClose }: BookingDialogPr
 
   if (!doctor) return null;
 
+  const initials = doctor.full_name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
+
   return (
     <Dialog open={open} onOpenChange={(v) => !v && handleClose()}>
-      <DialogContent className="max-w-md mx-4 max-h-[85vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-base">
-            <Calendar className="h-5 w-5 text-primary" />
-            Book with {doctor.full_name}
-          </DialogTitle>
-          <p className="text-xs text-muted-foreground">{doctor.specialization} · ₹{doctor.consultation_fee}</p>
-        </DialogHeader>
-
-        <div className="space-y-4 pt-2">
-          {/* Step 1: Date picker */}
-          <div>
-            <Label className="text-xs mb-2 block">Select Date</Label>
-            <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none -mx-1 px-1">
-              {availableDates.map((d) => {
-                const dateStr = format(d, "yyyy-MM-dd");
-                const isSelected = selectedDate === dateStr;
-                return (
-                  <button
-                    key={dateStr}
-                    onClick={() => { setSelectedDate(dateStr); setSelectedSlot(null); }}
-                    className={`flex-shrink-0 flex flex-col items-center justify-center w-[4.5rem] h-20 rounded-2xl border-2 transition-all duration-300 ${
-                      isSelected
-                        ? "bg-teal-600 text-white border-teal-600 shadow-md shadow-teal-600/30 scale-105"
-                        : "bg-white text-slate-600 border-slate-100 hover:border-teal-200 hover:bg-teal-50/30"
-                    }`}
-                  >
-                    <span className={`text-[10px] font-bold tracking-wider uppercase mb-1 ${isSelected ? "text-teal-100" : "text-slate-400"}`}>{DAY_NAMES[d.getDay()]}</span>
-                    <span className="text-2xl font-black leading-none">{format(d, "d")}</span>
-                    <span className={`text-[10px] font-medium mt-1 ${isSelected ? "text-teal-100" : "text-slate-500"}`}>{format(d, "MMM")}</span>
-                  </button>
-                );
-              })}
+      <DialogContent className="max-w-md p-0 gap-0 overflow-hidden max-h-[90vh] flex flex-col">
+        {/* Header */}
+        <DialogHeader className="space-y-0 p-5 pb-4 bg-gradient-to-br from-primary/10 via-secondary/5 to-transparent border-b text-left">
+          <DialogTitle className="sr-only">Book an appointment with {doctor.full_name}</DialogTitle>
+          <div className="flex items-center gap-3">
+            <div className="h-12 w-12 shrink-0 rounded-full bg-primary/15 text-primary flex items-center justify-center font-bold">
+              {initials}
+            </div>
+            <div className="min-w-0">
+              <p className="font-semibold text-foreground truncate">{doctor.full_name}</p>
+              <p className="text-xs text-muted-foreground truncate">{doctor.specialization}</p>
+            </div>
+            <div className="ml-auto text-right">
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Fee</p>
+              <p className="text-base font-bold text-foreground">₹{doctor.consultation_fee}</p>
             </div>
           </div>
+        </DialogHeader>
 
-          {/* Step 2: Time slots */}
-          {selectedDate && (
-            <div>
-              <Label className="text-xs mb-2 block flex items-center gap-1">
-                <Clock className="h-3 w-3" /> Available Slots
-              </Label>
-              {timeSlots.length === 0 ? (
-                <p className="text-xs text-muted-foreground py-2">No available slots for this date.</p>
-              ) : (
-                <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-                  {timeSlots.map((slot) => (
+        <div className="flex-1 overflow-y-auto p-5 space-y-6">
+          {/* Step 1: Date picker */}
+          <section className="space-y-3">
+            <div className="flex items-center gap-2">
+              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">1</span>
+              <Label className="text-sm font-semibold">Pick a date</Label>
+            </div>
+            {availableDates.length === 0 ? (
+              <p className="text-xs text-muted-foreground rounded-xl border border-dashed p-4 text-center">
+                This doctor hasn't published availability yet.
+              </p>
+            ) : (
+              <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none -mx-1 px-1">
+                {availableDates.map((d) => {
+                  const dateStr = format(d, "yyyy-MM-dd");
+                  const isSelected = selectedDate === dateStr;
+                  return (
                     <button
-                      key={slot.time}
-                      onClick={() => setSelectedSlot(slot.time)}
-                      className={`rounded-xl border-2 py-2.5 px-2 text-xs font-bold transition-all duration-300 ${
-                        selectedSlot === slot.time
-                          ? "bg-teal-600 text-white border-teal-600 shadow-md shadow-teal-600/20"
-                          : "bg-slate-50 text-slate-700 border-slate-100 hover:border-teal-200 hover:bg-teal-50"
+                      key={dateStr}
+                      onClick={() => { setSelectedDate(dateStr); setSelectedSlot(null); }}
+                      className={`flex-shrink-0 flex flex-col items-center justify-center w-[4.25rem] h-[4.75rem] rounded-2xl border transition-all ${
+                        isSelected
+                          ? "bg-primary text-primary-foreground border-primary shadow-md shadow-primary/25"
+                          : "bg-card text-foreground border-border hover:border-primary/40 hover:bg-accent"
                       }`}
                     >
-                      {formatTime12h(slot.time)}
+                      <span className={`text-[10px] font-semibold uppercase tracking-wider ${isSelected ? "opacity-80" : "text-muted-foreground"}`}>
+                        {DAY_NAMES[d.getDay()]}
+                      </span>
+                      <span className="text-xl font-bold leading-tight">{format(d, "d")}</span>
+                      <span className={`text-[10px] ${isSelected ? "opacity-80" : "text-muted-foreground"}`}>{format(d, "MMM")}</span>
                     </button>
-                  ))}
-                </div>
-              )}
+                  );
+                })}
+              </div>
+            )}
+          </section>
+
+          {/* Step 2: Time slots */}
+          <section className="space-y-3">
+            <div className="flex items-center gap-2">
+              <span className={`flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold ${selectedDate ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}>2</span>
+              <Label className="text-sm font-semibold flex items-center gap-1.5">
+                <Clock className="h-3.5 w-3.5 text-muted-foreground" /> Choose a time
+              </Label>
             </div>
-          )}
+            {!selectedDate ? (
+              <p className="text-xs text-muted-foreground rounded-xl border border-dashed p-4 text-center">Select a date to see open slots.</p>
+            ) : timeSlots.length === 0 ? (
+              <p className="text-xs text-muted-foreground rounded-xl border border-dashed p-4 text-center">No slots left on this day. Try another date.</p>
+            ) : (
+              <div className="grid grid-cols-3 gap-2">
+                {timeSlots.map((slot) => (
+                  <button
+                    key={slot.time}
+                    onClick={() => setSelectedSlot(slot.time)}
+                    className={`rounded-xl border py-2.5 text-xs font-semibold transition-all ${
+                      selectedSlot === slot.time
+                        ? "bg-primary text-primary-foreground border-primary shadow-sm shadow-primary/25"
+                        : "bg-card text-foreground border-border hover:border-primary/40 hover:bg-accent"
+                    }`}
+                  >
+                    {formatTime12h(slot.time)}
+                  </button>
+                ))}
+              </div>
+            )}
+          </section>
 
           {/* Step 3: Reason */}
           {selectedSlot && (
-            <div>
-              <Label className="text-xs font-bold text-slate-700 mb-2 block">Reason for Visit <span className="text-slate-400 font-normal">(optional)</span></Label>
+            <section className="space-y-3">
+              <div className="flex items-center gap-2">
+                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">3</span>
+                <Label className="text-sm font-semibold">
+                  Reason for visit <span className="font-normal text-muted-foreground">(optional)</span>
+                </Label>
+              </div>
               <Input
-                className="h-11 text-sm rounded-xl border-slate-200 bg-slate-50 focus-visible:ring-teal-500/30"
+                className="h-11 rounded-xl text-sm"
                 placeholder="e.g. Regular checkup, follow-up..."
                 value={reason}
                 onChange={(e) => setReason(e.target.value)}
               />
-            </div>
+            </section>
           )}
 
-          {/* Confirm */}
+          {/* Summary */}
           {selectedDate && selectedSlot && (
-            <div className="rounded-2xl bg-gradient-to-br from-teal-50/80 to-blue-50/50 border border-teal-100 p-4 space-y-2 mt-2">
-              <p className="text-xs font-bold text-teal-800 uppercase tracking-wider mb-2">Appointment Summary</p>
-              <div className="flex flex-col gap-1.5">
-                <p className="text-sm font-medium text-slate-700 flex items-center justify-between">
-                  <span className="text-slate-500 text-xs">Date</span>
-                  {format(new Date(selectedDate), "EEE, MMM d, yyyy")}
-                </p>
-                <p className="text-sm font-bold text-teal-700 flex items-center justify-between">
-                  <span className="text-slate-500 text-xs font-medium">Time</span>
-                  {formatTime12h(selectedSlot)}
-                </p>
-                <p className="text-sm font-medium text-slate-700 flex items-center justify-between">
-                  <span className="text-slate-500 text-xs">Doctor</span>
-                  {doctor.full_name}
-                </p>
-                <p className="text-sm font-bold text-slate-800 flex items-center justify-between mt-1 pt-1 border-t border-teal-200/50">
-                  <span className="text-slate-500 text-xs font-medium">Total Fee</span>
-                  ₹{doctor.consultation_fee}
-                </p>
+            <div className="rounded-2xl border bg-muted/40 p-4 space-y-2">
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Summary</p>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">Date</span>
+                <span className="font-medium">{format(new Date(selectedDate), "EEE, MMM d, yyyy")}</span>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">Time</span>
+                <span className="font-semibold text-primary">{formatTime12h(selectedSlot)}</span>
+              </div>
+              <div className="flex items-center justify-between border-t pt-2 text-sm">
+                <span className="text-muted-foreground">Total</span>
+                <span className="font-bold">₹{doctor.consultation_fee}</span>
               </div>
             </div>
           )}
+        </div>
 
+        {/* Sticky footer */}
+        <div className="border-t bg-background/95 backdrop-blur p-4">
           <Button
-            className="w-full gap-2 h-12 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-sm shadow-md shadow-teal-600/20 transition-all duration-300 mt-2"
+            className="w-full h-12 rounded-xl gap-2 font-semibold"
             disabled={!selectedDate || !selectedSlot || bookAppointment.isPending}
             onClick={handleBook}
           >
             {bookAppointment.isPending ? (
-              <><Loader2 className="h-4 w-4 animate-spin" /> Confirming Booking...</>
+              <><Loader2 className="h-4 w-4 animate-spin" /> Confirming...</>
             ) : (
               "Confirm Booking"
             )}
