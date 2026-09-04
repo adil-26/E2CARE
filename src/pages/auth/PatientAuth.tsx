@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { sendResetOtp, resetPasswordWithOtp } from "@/lib/passwordReset";
 import { useRole } from "@/hooks/useRole";
 import { lovable } from "@/integrations/lovable";
 import { Button } from "@/components/ui/button";
@@ -130,7 +131,7 @@ export default function PatientAuth() {
 
 
 
-  const { signIn, signUp, user, sendOtp, verifyOtp, updatePassword } = useAuth();
+  const { signIn, signUp, user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const { role } = useRole();
@@ -270,7 +271,7 @@ export default function PatientAuth() {
       }
     }
     setIsLoading(true);
-    const { error } = await sendOtp(resetEmail);
+    const { error } = await sendResetOtp(resetEmail);
     setIsLoading(false);
     if (error) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
@@ -287,14 +288,7 @@ export default function PatientAuth() {
       toast({ title: "Enter all 6 digits", variant: "destructive" });
       return;
     }
-    setIsLoading(true);
-    const { error } = await verifyOtp(resetEmail, otp);
-    setIsLoading(false);
-    if (error) {
-      toast({ title: "Invalid code", description: "The OTP is incorrect or expired. Please try again.", variant: "destructive" });
-    } else {
-      setForgotStep("new-password");
-    }
+    setForgotStep("new-password");
   };
 
   // Step 3: set new password
@@ -307,7 +301,7 @@ export default function PatientAuth() {
       }
     }
     setIsLoading(true);
-    const { error } = await updatePassword(newPassword);
+    const { error } = await resetPasswordWithOtp(resetEmail, otp, newPassword);
     setIsLoading(false);
     if (error) {
       toast({ title: "Error", description: error.message, variant: "destructive" });

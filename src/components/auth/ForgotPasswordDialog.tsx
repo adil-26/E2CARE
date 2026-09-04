@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useAuth } from "@/hooks/useAuth";
+import { sendResetOtp, resetPasswordWithOtp } from "@/lib/passwordReset";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,7 +27,6 @@ interface ForgotPasswordDialogProps {
 }
 
 export function ForgotPasswordDialog({ open, onOpenChange, defaultEmail = "" }: ForgotPasswordDialogProps) {
-  const { sendOtp, verifyOtp, updatePassword } = useAuth();
   const { toast } = useToast();
 
   const [step, setStep] = useState<Step>("email");
@@ -56,7 +55,7 @@ export function ForgotPasswordDialog({ open, onOpenChange, defaultEmail = "" }: 
       }
     }
     setIsLoading(true);
-    const { error } = await sendOtp(email);
+    const { error } = await sendResetOtp(email);
     setIsLoading(false);
     if (error) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
@@ -73,13 +72,6 @@ export function ForgotPasswordDialog({ open, onOpenChange, defaultEmail = "" }: 
       toast({ title: "Enter all 6 digits", variant: "destructive" });
       return;
     }
-    setIsLoading(true);
-    const { error } = await verifyOtp(email, otp);
-    setIsLoading(false);
-    if (error) {
-      toast({ title: "Invalid code", description: "The code is incorrect or expired.", variant: "destructive" });
-      return;
-    }
     setStep("new-password");
   };
 
@@ -94,7 +86,7 @@ export function ForgotPasswordDialog({ open, onOpenChange, defaultEmail = "" }: 
       }
     }
     setIsLoading(true);
-    const { error } = await updatePassword(newPassword);
+    const { error } = await resetPasswordWithOtp(email, otp, newPassword);
     setIsLoading(false);
     if (error) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
@@ -150,7 +142,7 @@ export function ForgotPasswordDialog({ open, onOpenChange, defaultEmail = "" }: 
               </InputOTP>
             </div>
             <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Verify code
+              Continue
             </Button>
             <button
               type="button"
