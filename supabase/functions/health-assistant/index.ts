@@ -172,6 +172,23 @@ Deno.serve(async (req) => {
       medicalContext += "\n";
     }
 
+    // Prescriptions issued to this patient
+    if (prescriptions.length > 0) {
+      medicalContext += `### Prescriptions (issued to this patient)\n`;
+      prescriptions.forEach((p: any) => {
+        medicalContext += `- ${String(p.created_at || "").slice(0, 10)} — ${p.diagnosis || "No diagnosis noted"} (${p.status})\n`;
+        if (Array.isArray(p.medicines)) {
+          p.medicines.forEach((m: any) => {
+            medicalContext += `  • ${m.name || m.medicine || "Medicine"} ${m.dosage || ""} ${m.frequency || ""} ${m.duration || ""}\n`;
+          });
+        }
+        if (p.notes) medicalContext += `  Notes: ${p.notes}\n`;
+      });
+      medicalContext += "\n";
+    }
+
+
+
     // Daily routines
     if (routines.length > 0) {
       medicalContext += `### Recent Daily Routines (last 7 days)\n`;
