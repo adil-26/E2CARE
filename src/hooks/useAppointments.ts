@@ -224,6 +224,7 @@ export function useAppointments() {
       const { data, error } = await supabase
         .from("appointments")
         .select("*")
+        .eq("user_id", user?.id)
         .order("appointment_date", { ascending: true });
       if (error) throw error;
 
@@ -338,15 +339,31 @@ export function useAppointments() {
   const updateAppointmentStatus = useMutation({
     mutationFn: async (params: { appointmentId: string; status: "completed" | "missed" | "upcoming" }) => {
       if (!user) throw new Error("Not authenticated");
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from("appointments")
         .update({ status: params.status })
-        .eq("id", params.appointmentId);
+        .eq("id", params.appointmentId)
+        .eq("user_id", user.id)
+        .select("id, status")
+        .single();
       if (error) throw error;
-      return params.status;
+      if (!data || data.status !== params.status) {
+        throw new Error("The appointment status was not saved. Please try again.");
+      }
+      return { appointmentId: params.appointmentId, status: params.status };
     },
-    onSuccess: (status) => {
-      queryClient.invalidateQueries({ queryKey: ["appointments"] });
+    onMutate: async ({ appointmentId, status }) => {
+      const queryKey = ["appointments", user?.id];
+      await queryClient.cancelQueries({ queryKey });
+      const previous = queryClient.getQueryData<Appointment[]>(queryKey);
+      queryClient.setQueryData<Appointment[]>(queryKey, (current = []) =>
+        current.map((appointment) =>
+          appointment.id === appointmentId ? { ...appointment, status } : appointment
+        )
+      );
+      return { previous, queryKey };
+    },
+    onSuccess: ({ status }) => {
       toast({
         title: status === "completed" ? "Marked as Attended ✅" : "Marked as Missed",
         description:
@@ -355,8 +372,12 @@ export function useAppointments() {
             : "We've recorded that you missed this appointment.",
       });
     },
-    onError: (err) => {
+    onError: (err, _variables, context) => {
+      if (context?.previous) queryClient.setQueryData(context.queryKey, context.previous);
       toast({ title: "Update Failed", description: err.message, variant: "destructive" });
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["appointments", user?.id] });
     },
   });
 
