@@ -63,3 +63,28 @@ export const STATUS_BADGE: Record<EffectiveStatus, string> = {
 export function isActiveStatus(s: EffectiveStatus) {
   return s === "today" || s === "upcoming";
 }
+
+export interface StatusSummary {
+  total: number;
+  today: number;
+  upcoming: number;
+  pending_review: number;
+  completed: number;
+  missed: number;
+  cancelled: number;
+}
+
+/** Counts appointments by their real-world (time-aware) status. */
+export function summarizeAppointments(list: AppointmentLike[]): StatusSummary {
+  const s: StatusSummary = {
+    total: list.length,
+    today: 0,
+    upcoming: 0,
+    pending_review: 0,
+    completed: 0,
+    missed: 0,
+    cancelled: 0,
+  };
+  for (const a of list) s[getEffectiveStatus(a)]++;
+  return s;
+}
