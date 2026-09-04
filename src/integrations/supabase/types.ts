@@ -293,6 +293,63 @@ export type Database = {
         }
         Relationships: []
       }
+      diet_plans: {
+        Row: {
+          ai_generated: boolean
+          ai_rationale: string | null
+          calorie_target: number | null
+          created_at: string
+          doctor_id: string
+          end_date: string | null
+          goal: string | null
+          guidelines: Json
+          id: string
+          meals: Json
+          patient_id: string
+          start_date: string
+          status: string
+          title: string
+          updated_at: string
+          water_target_glasses: number
+        }
+        Insert: {
+          ai_generated?: boolean
+          ai_rationale?: string | null
+          calorie_target?: number | null
+          created_at?: string
+          doctor_id: string
+          end_date?: string | null
+          goal?: string | null
+          guidelines?: Json
+          id?: string
+          meals?: Json
+          patient_id: string
+          start_date?: string
+          status?: string
+          title: string
+          updated_at?: string
+          water_target_glasses?: number
+        }
+        Update: {
+          ai_generated?: boolean
+          ai_rationale?: string | null
+          calorie_target?: number | null
+          created_at?: string
+          doctor_id?: string
+          end_date?: string | null
+          goal?: string | null
+          guidelines?: Json
+          id?: string
+          meals?: Json
+          patient_id?: string
+          start_date?: string
+          status?: string
+          title?: string
+          updated_at?: string
+          water_target_glasses?: number
+        }
+        Relationships: []
+      }
       doctor_availability: {
         Row: {
           created_at: string

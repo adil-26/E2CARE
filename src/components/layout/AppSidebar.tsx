@@ -19,6 +19,7 @@ import {
   Stethoscope,
   Scale,
   Leaf,
+  Apple,
 } from "lucide-react";
 import {
   Sidebar,
@@ -52,6 +53,7 @@ export default function AppSidebar() {
     { title: t.nav.aiChat, icon: Bot, path: "/chat" },
     { title: t.nav.comparison, icon: Scale, path: "/comparison" },
     { title: "Treatment Plans", icon: Leaf, path: "/treatments" },
+    { title: "My Daily Diet", icon: Apple, path: "/diet-plan" },
   ];
 
   const moreNavItems = [

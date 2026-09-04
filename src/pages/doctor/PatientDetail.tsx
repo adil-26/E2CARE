@@ -18,6 +18,7 @@ import { MedicineAdherenceDashboard } from "@/components/doctor/MedicineAdherenc
 import { ClinicalAlertsWidget } from "@/components/doctor/ClinicalAlertsWidget";
 import { ClinicalTrendsGraph } from "@/components/doctor/ClinicalTrendsGraph";
 import { AyurvedicCaseTab } from "@/components/ayurveda/AyurvedicCaseTab";
+import DietPlanTab from "@/components/doctor/DietPlanTab";
 import TrendChart from "@/components/records/TrendChart";
 import ComparisonTable from "@/components/records/ComparisonTable";
 import { downloadComparisonReport } from "@/utils/reportExportUtils";
@@ -82,7 +83,7 @@ export default function PatientDetail() {
       <ClinicalAlertsWidget patientId={patientId || ""} />
 
       <Tabs defaultValue="history">
-        <TabsList className="grid w-full grid-cols-9 mb-8 overflow-x-auto scrollbar-none">
+        <TabsList className="grid w-full grid-cols-10 mb-8 overflow-x-auto scrollbar-none">
           <TabsTrigger value="history">History</TabsTrigger>
           <TabsTrigger value="vitals">Vitals</TabsTrigger>
           <TabsTrigger value="medications">Meds</TabsTrigger>
@@ -91,8 +92,13 @@ export default function PatientDetail() {
           <TabsTrigger value="conditions">Log</TabsTrigger>
           <TabsTrigger value="ayurveda">Ayurveda</TabsTrigger>
           <TabsTrigger value="plans">Plans</TabsTrigger>
+          <TabsTrigger value="diet">Diet</TabsTrigger>
           <TabsTrigger value="notes">Notes</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="diet" className="pt-3">
+          <DietPlanTab patientId={patientId || ""} />
+        </TabsContent>
 
         {/* Medical History Tab */}
         <TabsContent value="history" className="pt-3">
