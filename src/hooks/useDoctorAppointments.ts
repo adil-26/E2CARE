@@ -1,6 +1,25 @@
+import { useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+
+/** Keeps appointment queries in sync with live DB changes. */
+function useAppointmentsRealtime(keys: string[]) {
+  const queryClient = useQueryClient();
+  useEffect(() => {
+    const channel = supabase
+      .channel(`appointments-sync-${keys.join("-")}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "appointments" }, () => {
+        keys.forEach((k) => queryClient.invalidateQueries({ queryKey: [k] }));
+      })
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [queryClient, keys.join("-")]);
+}
+
 
 export type AppointmentWithPatient = {
   id: string;
@@ -39,6 +58,7 @@ async function attachPatients(rows: any[]): Promise<AppointmentWithPatient[]> {
 export function useDoctorAppointments(doctorId?: string) {
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  useAppointmentsRealtime(["doctor_appointments_full", "doctor_today_appointments"]);
 
   const { data: appointments = [], isLoading } = useQuery({
     queryKey: ["doctor_appointments_full", doctorId],
@@ -87,6 +107,10 @@ export function useDoctorAppointments(doctorId?: string) {
 }
 
 export function useAdminAppointments() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  useAppointmentsRealtime(["admin_appointments_full", "admin_analytics"]);
+
   const { data: appointments = [], isLoading } = useQuery({
     queryKey: ["admin_appointments_full"],
     queryFn: async () => {
@@ -100,5 +124,21 @@ export function useAdminAppointments() {
     },
   });
 
-  return { appointments, isLoading };
+  const updateStatus = useMutation({
+    mutationFn: async ({ id, status }: { id: string; status: string }) => {
+      const { error } = await supabase.from("appointments").update({ status }).eq("id", id);
+      if (error) throw error;
+      return { id, status };
+    },
+    onSuccess: ({ status }) => {
+      queryClient.invalidateQueries({ queryKey: ["admin_appointments_full"] });
+      queryClient.invalidateQueries({ queryKey: ["admin_analytics"] });
+      toast({ title: "Appointment updated", description: `Marked as ${status}.` });
+    },
+    onError: (e: any) =>
+      toast({ title: "Update failed", description: e.message, variant: "destructive" }),
+  });
+
+  return { appointments, isLoading, updateStatus };
+
 }

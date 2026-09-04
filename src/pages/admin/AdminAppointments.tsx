@@ -8,18 +8,50 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAdminAppointments } from "@/hooks/useDoctorAppointments";
+import {
+  getEffectiveStatus,
+  STATUS_LABEL,
+  STATUS_BADGE,
+  type EffectiveStatus,
+} from "@/lib/appointmentStatus";
 import { format, parseISO } from "date-fns";
 
-const FILTERS = ["all", "upcoming", "completed", "cancelled"] as const;
+const FILTERS = [
+  "all",
+  "today",
+  "upcoming",
+  "pending_review",
+  "completed",
+  "missed",
+  "cancelled",
+] as const;
+
+const FILTER_LABEL: Record<(typeof FILTERS)[number], string> = {
+  all: "All",
+  today: "Today",
+  upcoming: "Upcoming",
+  pending_review: "Needs update",
+  completed: "Completed",
+  missed: "Missed",
+  cancelled: "Cancelled",
+};
 
 export default function AdminAppointments() {
   const navigate = useNavigate();
-  const { appointments, isLoading } = useAdminAppointments();
+  const { appointments, isLoading, updateStatus } = useAdminAppointments();
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<(typeof FILTERS)[number]>("all");
 
-  const filtered = appointments.filter((apt: any) => {
-    const matchStatus = filter === "all" || apt.status === filter;
+  const withStatus = appointments.map((apt: any) => ({
+    ...apt,
+    effective: getEffectiveStatus(apt) as EffectiveStatus,
+  }));
+
+  const countFor = (f: (typeof FILTERS)[number]) =>
+    f === "all" ? withStatus.length : withStatus.filter((a) => a.effective === f).length;
+
+  const filtered = withStatus.filter((apt: any) => {
+    const matchStatus = filter === "all" || apt.effective === filter;
     const q = search.toLowerCase();
     const matchSearch =
       !q ||
@@ -49,8 +81,8 @@ export default function AdminAppointments() {
       <Tabs value={filter} onValueChange={(v) => setFilter(v as any)}>
         <TabsList className="w-full justify-start overflow-x-auto">
           {FILTERS.map((f) => (
-            <TabsTrigger key={f} value={f} className="capitalize">
-              {f} ({f === "all" ? appointments.length : appointments.filter((a: any) => a.status === f).length})
+            <TabsTrigger key={f} value={f} className="whitespace-nowrap">
+              {FILTER_LABEL[f]} ({countFor(f)})
             </TabsTrigger>
           ))}
         </TabsList>
@@ -89,12 +121,29 @@ export default function AdminAppointments() {
                     </span>
                   </div>
                 </div>
-                <Badge
-                  variant={apt.status === "upcoming" ? "default" : apt.status === "cancelled" ? "outline" : "secondary"}
-                  className="capitalize"
-                >
-                  {apt.status}
+                <Badge variant="outline" className={`border ${STATUS_BADGE[apt.effective]}`}>
+                  {STATUS_LABEL[apt.effective]}
                 </Badge>
+                {apt.effective === "pending_review" && (
+                  <div className="flex gap-1.5">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={updateStatus.isPending}
+                      onClick={() => updateStatus.mutate({ id: apt.id, status: "completed" })}
+                    >
+                      Completed
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={updateStatus.isPending}
+                      onClick={() => updateStatus.mutate({ id: apt.id, status: "missed" })}
+                    >
+                      Missed
+                    </Button>
+                  </div>
+                )}
                 <Button size="sm" variant="ghost" onClick={() => navigate(`/admin/patients/${apt.user_id}`)}>
                   Patient <ChevronRight className="ml-0.5 h-3.5 w-3.5" />
                 </Button>

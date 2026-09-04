@@ -12,9 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { useDoctorProfile } from "@/hooks/useDoctorPatients";
 import { useDoctorAppointments, type AppointmentWithPatient } from "@/hooks/useDoctorAppointments";
 import { format, isToday, parseISO } from "date-fns";
-
-const statusVariant = (status: string) =>
-  status === "upcoming" ? "default" : status === "completed" ? "secondary" : "outline";
+import { getEffectiveStatus, STATUS_BADGE, STATUS_LABEL } from "@/lib/appointmentStatus";
 
 export default function DoctorAppointments() {
   const navigate = useNavigate();
@@ -23,12 +21,13 @@ export default function DoctorAppointments() {
   const [noteTarget, setNoteTarget] = useState<AppointmentWithPatient | null>(null);
   const [noteText, setNoteText] = useState("");
 
-  const todayList = appointments.filter((a) => isToday(parseISO(a.appointment_date)));
-  const upcoming = appointments.filter(
-    (a) => a.status === "upcoming" && new Date(a.appointment_date) >= new Date(new Date().toDateString())
+  const todayList = appointments.filter(
+    (a) => isToday(parseISO(a.appointment_date)) && getEffectiveStatus(a) !== "cancelled"
   );
-  const past = appointments.filter(
-    (a) => a.status !== "upcoming" || new Date(a.appointment_date) < new Date(new Date().toDateString())
+  const upcoming = appointments.filter((a) => getEffectiveStatus(a) === "upcoming");
+  const needsUpdate = appointments.filter((a) => getEffectiveStatus(a) === "pending_review");
+  const past = appointments.filter((a) =>
+    ["completed", "missed", "cancelled"].includes(getEffectiveStatus(a))
   );
 
   const openNotes = (apt: AppointmentWithPatient) => {
@@ -66,7 +65,9 @@ export default function DoctorAppointments() {
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
                       <p className="font-semibold text-foreground">{name}</p>
-                      <Badge variant={statusVariant(apt.status)} className="capitalize">{apt.status}</Badge>
+                      <Badge variant="outline" className={`border ${STATUS_BADGE[getEffectiveStatus(apt)]}`}>
+                        {STATUS_LABEL[getEffectiveStatus(apt)]}
+                      </Badge>
                       {apt.patient?.blood_group && (
                         <Badge variant="outline" className="text-[10px]">{apt.patient.blood_group}</Badge>
                       )}
@@ -102,7 +103,7 @@ export default function DoctorAppointments() {
                   <Button size="sm" variant="outline" onClick={() => openNotes(apt)}>
                     <StickyNote className="mr-1 h-3.5 w-3.5" /> Notes
                   </Button>
-                  {apt.status === "upcoming" && (
+                  {["today", "upcoming", "pending_review"].includes(getEffectiveStatus(apt)) && (
                     <>
                       <Button
                         size="sm"
@@ -111,6 +112,16 @@ export default function DoctorAppointments() {
                       >
                         <CheckCircle2 className="mr-1 h-3.5 w-3.5" /> Complete
                       </Button>
+                      {getEffectiveStatus(apt) === "pending_review" && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => updateStatus.mutate({ id: apt.id, status: "missed" })}
+                          disabled={updateStatus.isPending}
+                        >
+                          <XCircle className="mr-1 h-3.5 w-3.5" /> Missed
+                        </Button>
+                      )}
                       <Button
                         size="sm"
                         variant="ghost"
@@ -142,10 +153,12 @@ export default function DoctorAppointments() {
         <TabsList className="w-full justify-start overflow-x-auto">
           <TabsTrigger value="today">Today ({todayList.length})</TabsTrigger>
           <TabsTrigger value="upcoming">Upcoming ({upcoming.length})</TabsTrigger>
+          <TabsTrigger value="needs">Needs update ({needsUpdate.length})</TabsTrigger>
           <TabsTrigger value="past">History ({past.length})</TabsTrigger>
         </TabsList>
         <TabsContent value="today" className="mt-4">{renderList(todayList)}</TabsContent>
         <TabsContent value="upcoming" className="mt-4">{renderList(upcoming)}</TabsContent>
+        <TabsContent value="needs" className="mt-4">{renderList(needsUpdate)}</TabsContent>
         <TabsContent value="past" className="mt-4">{renderList(past)}</TabsContent>
       </Tabs>
 

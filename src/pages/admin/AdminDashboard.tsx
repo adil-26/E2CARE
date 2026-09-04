@@ -38,8 +38,11 @@ export default function AdminDashboard() {
 
   const totalApt = Math.max(a?.appointments ?? 0, 1);
   const breakdown = [
+    { label: "Today", value: a?.todayScheduled ?? 0, icon: Clock, tone: "text-secondary" },
     { label: "Upcoming", value: a?.upcoming ?? 0, icon: Clock, tone: "text-primary" },
+    { label: "Needs update", value: a?.pendingReview ?? 0, icon: Clock, tone: "text-warning" },
     { label: "Completed", value: a?.completed ?? 0, icon: CheckCircle2, tone: "text-secondary" },
+    { label: "Missed", value: a?.missed ?? 0, icon: XCircle, tone: "text-warning" },
     { label: "Cancelled", value: a?.cancelled ?? 0, icon: XCircle, tone: "text-destructive" },
   ];
 
