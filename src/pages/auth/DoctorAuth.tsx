@@ -16,9 +16,11 @@ import { motion } from "framer-motion";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
+import { ForgotPasswordDialog } from "@/components/auth/ForgotPasswordDialog";
 
 const emailSchema = z.string().email("Please enter a valid email address");
 const passwordSchema = z.string().min(6, "Password must be at least 6 characters");
+
 const nameSchema = z.string().min(2, "Name must be at least 2 characters");
 
 const specializations = [
@@ -32,6 +34,7 @@ export default function DoctorAuth() {
   const [isLoading, setIsLoading] = useState(false);
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
+  const [forgotOpen, setForgotOpen] = useState(false);
 
   // Signup state
   const [signupName, setSignupName] = useState("");
@@ -269,10 +272,20 @@ export default function DoctorAuth() {
                       <Input type="password" placeholder="••••••••" className="pl-10" value={loginPassword} onChange={(e) => setLoginPassword(e.target.value)} required />
                     </div>
                   </div>
+                  <div className="flex justify-end">
+                    <button
+                      type="button"
+                      className="text-xs text-primary hover:underline"
+                      onClick={() => setForgotOpen(true)}
+                    >
+                      Forgot password?
+                    </button>
+                  </div>
                   <Button type="submit" className="w-full" disabled={isLoading}>
                     {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Sign In
                   </Button>
                 </form>
+                <ForgotPasswordDialog open={forgotOpen} onOpenChange={setForgotOpen} defaultEmail={loginEmail} />
               </TabsContent>
 
               {/* REGISTER TAB */}

@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Shield, Mail, Lock, Loader2, ArrowLeft } from "lucide-react";
 import { motion } from "framer-motion";
 import { z } from "zod";
+import { ForgotPasswordDialog } from "@/components/auth/ForgotPasswordDialog";
 
 const emailSchema = z.string().email("Please enter a valid email address");
 const passwordSchema = z.string().min(6, "Password must be at least 6 characters");
@@ -18,6 +19,7 @@ export default function AdminAuth() {
   const [isLoading, setIsLoading] = useState(false);
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
+  const [forgotOpen, setForgotOpen] = useState(false);
   const { signIn, user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -89,10 +91,20 @@ export default function AdminAuth() {
                   <Input type="password" placeholder="••••••••" className="pl-10" value={loginPassword} onChange={(e) => setLoginPassword(e.target.value)} required />
                 </div>
               </div>
+              <div className="flex justify-end">
+                <button
+                  type="button"
+                  className="text-xs text-primary hover:underline"
+                  onClick={() => setForgotOpen(true)}
+                >
+                  Forgot password?
+                </button>
+              </div>
               <Button type="submit" className="w-full" disabled={isLoading}>
                 {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Sign In as Admin
               </Button>
             </form>
+            <ForgotPasswordDialog open={forgotOpen} onOpenChange={setForgotOpen} defaultEmail={loginEmail} />
             <p className="mt-4 text-center text-xs text-muted-foreground">
               Admin accounts are created by the system administrator. No self-registration is available.
             </p>
