@@ -19,6 +19,7 @@ import {
   Stethoscope,
   Scale,
   Leaf,
+  Apple,
 } from "lucide-react";
 import {
   Sidebar,
