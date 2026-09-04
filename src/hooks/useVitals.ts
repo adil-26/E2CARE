@@ -33,6 +33,7 @@ export function useVitals() {
       const { data, error } = await supabase
         .from("vitals")
         .select("*")
+        .eq("user_id", user!.id)
         .order("recorded_at", { ascending: false })
         .limit(50);
       if (error) throw error;
