@@ -33,6 +33,7 @@ Deno.serve(async (req) => {
       { auth: { persistSession: false } },
     )
 
+    // Check every still-valid code for this email (user may have requested several)
     const { data: rows, error } = await admin
       .from('email_otps')
       .select('*')
@@ -40,17 +41,21 @@ Deno.serve(async (req) => {
       .eq('purpose', purpose)
       .is('consumed_at', null)
       .order('created_at', { ascending: false })
-      .limit(1)
+      .limit(10)
     if (error) throw error
 
-    const record = rows?.[0]
-    if (!record) return json({ error: 'No active code. Please request a new one.' }, 400)
-    if (new Date(record.expires_at).getTime() < Date.now()) return json({ error: 'Code expired.' }, 400)
-    if (record.attempts >= 5) return json({ error: 'Too many attempts. Request a new code.' }, 429)
+    const active = (rows ?? []).filter((r) => new Date(r.expires_at).getTime() >= Date.now())
+    if (active.length === 0) return json({ error: 'No active code. Please request a new one.' }, 400)
+    if (active.every((r) => r.attempts >= 5)) {
+      return json({ error: 'Too many attempts. Request a new code.' }, 429)
+    }
 
-    const codeHash = await sha256(`${email}:${code}`)
-    if (codeHash !== record.code_hash) {
-      await admin.from('email_otps').update({ attempts: record.attempts + 1 }).eq('id', record.id)
+    const codeHash = await sha256(`${email}:${code.trim()}`)
+    const record = active.find((r) => r.code_hash === codeHash && r.attempts < 5)
+    if (!record) {
+      await Promise.all(
+        active.map((r) => admin.from('email_otps').update({ attempts: r.attempts + 1 }).eq('id', r.id)),
+      )
       return json({ error: 'Incorrect code.' }, 400)
     }
 
