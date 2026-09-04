@@ -25,6 +25,7 @@ export function useDailyRoutine() {
       const { data, error } = await supabase
         .from("daily_routines")
         .select("*")
+        .eq("user_id", user!.id)
         .eq("routine_date", today())
         .maybeSingle();
       if (error) throw error;

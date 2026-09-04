@@ -58,6 +58,7 @@ Deno.serve(async (req) => {
       historyRes,
       reportsRes,
       routineRes,
+      prescriptionsRes,
     ] = await Promise.all([
       adminClient.from("profiles").select("*").eq("user_id", user.id).maybeSingle(),
       adminClient.from("vitals").select("*").eq("user_id", user.id).order("recorded_at", { ascending: false }).limit(20),
@@ -65,6 +66,12 @@ Deno.serve(async (req) => {
       adminClient.from("medical_history").select("*").eq("user_id", user.id).maybeSingle(),
       adminClient.from("medical_reports").select("id, title, report_type, report_date, ai_summary, extracted_data, status").eq("user_id", user.id).eq("status", "completed").order("report_date", { ascending: false }).limit(10),
       adminClient.from("daily_routines").select("*").eq("user_id", user.id).order("routine_date", { ascending: false }).limit(7),
+      adminClient
+        .from("prescriptions")
+        .select("id, diagnosis, notes, medicines, status, created_at")
+        .eq("patient_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(10),
     ]);
 
     // Build medical context
@@ -73,6 +80,7 @@ Deno.serve(async (req) => {
     const medications = medsRes.data || [];
     const history = historyRes.data;
     const reports = reportsRes.data || [];
+    const prescriptions = prescriptionsRes.data || [];
     const routines = routineRes.data || [];
 
     let medicalContext = "## Patient Medical Context\n\n";
@@ -164,6 +172,23 @@ Deno.serve(async (req) => {
       medicalContext += "\n";
     }
 
+    // Prescriptions issued to this patient
+    if (prescriptions.length > 0) {
+      medicalContext += `### Prescriptions (issued to this patient)\n`;
+      prescriptions.forEach((p: any) => {
+        medicalContext += `- ${String(p.created_at || "").slice(0, 10)} — ${p.diagnosis || "No diagnosis noted"} (${p.status})\n`;
+        if (Array.isArray(p.medicines)) {
+          p.medicines.forEach((m: any) => {
+            medicalContext += `  • ${m.name || m.medicine || "Medicine"} ${m.dosage || ""} ${m.frequency || ""} ${m.duration || ""}\n`;
+          });
+        }
+        if (p.notes) medicalContext += `  Notes: ${p.notes}\n`;
+      });
+      medicalContext += "\n";
+    }
+
+
+
     // Daily routines
     if (routines.length > 0) {
       medicalContext += `### Recent Daily Routines (last 7 days)\n`;
@@ -180,6 +205,7 @@ Deno.serve(async (req) => {
     const systemPrompt = `You are an AI Health Assistant for a personal health app. You have access to the patient's complete medical data provided below. Use this data to give personalized, evidence-based health guidance.
 
 RULES:
+- The medical context below belongs ONLY to the currently signed-in patient. Never mention, infer or invent data about any other person. If a fact is not in the context, say you don't have that record.
 - Always be empathetic, clear, and helpful.
 - Reference the patient's actual data when answering questions (e.g., "Based on your recent blood pressure reading of 130/85...").
 - Provide actionable advice for lifestyle, diet, and exercise.

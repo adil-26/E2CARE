@@ -33,6 +33,7 @@ export function useMedicalReports() {
       const { data, error } = await supabase
         .from("medical_reports")
         .select("*")
+        .eq("user_id", user!.id)
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data as MedicalReport[];
@@ -156,6 +157,7 @@ export function useMedicalReports() {
         .from("medical_reports")
         .delete()
         .eq("id", reportId)
+        .eq("user_id", user!.id)
         .select("id");
       if (error) throw error;
       if (data && data.length === 0) {
