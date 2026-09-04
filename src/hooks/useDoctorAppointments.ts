@@ -1,6 +1,25 @@
+import { useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+
+/** Keeps appointment queries in sync with live DB changes. */
+function useAppointmentsRealtime(keys: string[]) {
+  const queryClient = useQueryClient();
+  useEffect(() => {
+    const channel = supabase
+      .channel(`appointments-sync-${keys.join("-")}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "appointments" }, () => {
+        keys.forEach((k) => queryClient.invalidateQueries({ queryKey: [k] }));
+      })
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [queryClient, keys.join("-")]);
+}
+
 
 export type AppointmentWithPatient = {
   id: string;
