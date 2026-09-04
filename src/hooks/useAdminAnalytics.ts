@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { summarizeAppointments } from "@/lib/appointmentStatus";
 
 export type AdminAnalytics = {
   patients: number;
@@ -10,7 +11,10 @@ export type AdminAnalytics = {
   appointments: number;
   appointmentsToday: number;
   upcoming: number;
+  todayScheduled: number;
+  pendingReview: number;
   completed: number;
+  missed: number;
   cancelled: number;
   reports: number;
   prescriptions: number;
@@ -39,11 +43,7 @@ export function useAdminAnalytics() {
         pendingDoctors,
         approvedDoctors,
         rejectedDoctors,
-        appointments,
-        appointmentsToday,
-        upcoming,
-        completed,
-        cancelled,
+        appointmentRows,
         reports,
         prescriptions,
         conversations,
@@ -55,11 +55,10 @@ export function useAdminAnalytics() {
         countOf("doctors", (q) => q.eq("status", "pending")),
         countOf("doctors", (q) => q.eq("status", "approved")),
         countOf("doctors", (q) => q.eq("status", "rejected")),
-        countOf("appointments"),
-        countOf("appointments", (q) => q.eq("appointment_date", today)),
-        countOf("appointments", (q) => q.eq("status", "upcoming")),
-        countOf("appointments", (q) => q.eq("status", "completed")),
-        countOf("appointments", (q) => q.eq("status", "cancelled")),
+        supabase
+          .from("appointments")
+          .select("appointment_date, start_time, end_time, status")
+          .then(({ data }) => data || []),
         countOf("medical_reports"),
         countOf("prescriptions"),
         countOf("conversations"),
@@ -73,11 +72,7 @@ export function useAdminAnalytics() {
         pendingDoctors,
         approvedDoctors,
         rejectedDoctors,
-        appointments,
-        appointmentsToday,
-        upcoming,
-        completed,
-        cancelled,
+        appointmentRows,
         reports,
         prescriptions,
         conversations,
