@@ -121,6 +121,15 @@ export default function PatientAuth() {
   const [newPassword, setNewPassword] = useState("");
   const [showNewPw, setShowNewPw] = useState(false);
 
+  // phone (SMS OTP) sign-in flow
+  const [loginMethod, setLoginMethod] = useState<"email" | "phone">("email");
+  const [phone, setPhone] = useState("");
+  const [phoneOtp, setPhoneOtp] = useState("");
+  const [phoneStep, setPhoneStep] = useState<"number" | "code">("number");
+  const [resendIn, setResendIn] = useState(0);
+
+
+
   const { signIn, signUp, user, sendOtp, verifyOtp, updatePassword } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
