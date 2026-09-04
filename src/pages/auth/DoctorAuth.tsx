@@ -32,6 +32,7 @@ export default function DoctorAuth() {
   const [isLoading, setIsLoading] = useState(false);
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
+  const [forgotOpen, setForgotOpen] = useState(false);
 
   // Signup state
   const [signupName, setSignupName] = useState("");
