@@ -24,6 +24,9 @@ import { downloadComparisonReport } from "@/utils/reportExportUtils";
 import { format } from "date-fns";
 import { MedicalReport } from "@/hooks/useMedicalReports";
 import { IdCardDialog } from "@/components/patient/IdCardDialog";
+import { ClinicalNotesTab } from "@/components/doctor/ClinicalNotesTab";
+import { generateReportPdf } from "@/utils/generateReportPdf";
+import { NotebookPen, FileDown } from "lucide-react";
 export default function PatientDetail() {
   const { patientId } = useParams<{ patientId: string }>();
   const navigate = useNavigate();
@@ -79,7 +82,7 @@ export default function PatientDetail() {
       <ClinicalAlertsWidget patientId={patientId || ""} />
 
       <Tabs defaultValue="history">
-        <TabsList className="grid w-full grid-cols-8 mb-8 overflow-x-auto scrollbar-none">
+        <TabsList className="grid w-full grid-cols-9 mb-8 overflow-x-auto scrollbar-none">
           <TabsTrigger value="history">History</TabsTrigger>
           <TabsTrigger value="vitals">Vitals</TabsTrigger>
           <TabsTrigger value="medications">Meds</TabsTrigger>
@@ -88,6 +91,7 @@ export default function PatientDetail() {
           <TabsTrigger value="conditions">Log</TabsTrigger>
           <TabsTrigger value="ayurveda">Ayurveda</TabsTrigger>
           <TabsTrigger value="plans">Plans</TabsTrigger>
+          <TabsTrigger value="notes">Notes</TabsTrigger>
         </TabsList>
 
         {/* Medical History Tab */}
@@ -220,6 +224,11 @@ export default function PatientDetail() {
           )}
         </TabsContent>
 
+        {/* Clinical Notes Tab */}
+        <TabsContent value="notes" className="pt-3">
+          <ClinicalNotesTab patientId={patientId || ""} />
+        </TabsContent>
+
         {/* Reports Tab */}
         <TabsContent value="reports" className="space-y-2 pt-3">
           {selectedReportId ? (
@@ -251,19 +260,34 @@ export default function PatientDetail() {
                       </div>
                       <div className="flex flex-col items-end gap-2">
                         <Badge variant="secondary" className="text-[10px]">{r.status}</Badge>
-                        {r.file_url && (
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
+                        <div className="flex items-center gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
                             className="h-8 w-8"
-                            onClick={(e) => {
+                            title="Download PDF report"
+                            onClick={async (e) => {
                               e.stopPropagation();
-                              window.open(r.file_url, '_blank');
+                              await generateReportPdf(r as MedicalReport);
                             }}
                           >
-                            <ExternalLink className="h-4 w-4 text-muted-foreground" />
+                            <FileDown className="h-4 w-4 text-primary" />
                           </Button>
-                        )}
+                          {r.file_url && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8"
+                              title="Open original file"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                window.open(r.file_url, '_blank');
+                              }}
+                            >
+                              <ExternalLink className="h-4 w-4 text-muted-foreground" />
+                            </Button>
+                          )}
+                        </div>
                       </div>
                     </CardContent>
                   </Card>
