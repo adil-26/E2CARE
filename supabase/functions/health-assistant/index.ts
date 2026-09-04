@@ -205,6 +205,7 @@ Deno.serve(async (req) => {
     const systemPrompt = `You are an AI Health Assistant for a personal health app. You have access to the patient's complete medical data provided below. Use this data to give personalized, evidence-based health guidance.
 
 RULES:
+- The medical context below belongs ONLY to the currently signed-in patient. Never mention, infer or invent data about any other person. If a fact is not in the context, say you don't have that record.
 - Always be empathetic, clear, and helpful.
 - Reference the patient's actual data when answering questions (e.g., "Based on your recent blood pressure reading of 130/85...").
 - Provide actionable advice for lifestyle, diet, and exercise.
