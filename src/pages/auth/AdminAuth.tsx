@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Shield, Mail, Lock, Loader2, ArrowLeft } from "lucide-react";
 import { motion } from "framer-motion";
 import { z } from "zod";
+import { ForgotPasswordDialog } from "@/components/auth/ForgotPasswordDialog";
 
 const emailSchema = z.string().email("Please enter a valid email address");
 const passwordSchema = z.string().min(6, "Password must be at least 6 characters");
